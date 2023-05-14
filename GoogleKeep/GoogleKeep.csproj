@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>GoogleKeep</Product>
+    <PackageId>GoogleKeep</PackageId>
+    <PackageVersion>0.0.0.1</PackageVersion>
+    <Version>0.0.0.1</Version>
+    <Authors>Jinjinov</Authors>
+    <Description>Google Keep .Net API</Description>
+    <Copyright>Copyright (c) Jinjinov 2022</Copyright>
+    <PackageProjectUrl>https://github.com/Jinjinov/GoogleKeep</PackageProjectUrl>
+    <!--<PackageIcon></PackageIcon>-->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Jinjinov/GoogleKeep.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Google Keep;API;NET Standard</PackageTags>
+    <!--<PackageReleaseNotes></PackageReleaseNotes>-->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
+  </ItemGroup>
+
+</Project>
