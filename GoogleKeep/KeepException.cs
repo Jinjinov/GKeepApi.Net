@@ -1,5 +1,8 @@
 ﻿using System;
 
+/// <summary>
+/// exception.py
+/// </summary>
 namespace GoogleKeep
 {
     public class APIException : Exception
