@@ -415,7 +415,7 @@ namespace GoogleKeep
 
     public class NodeAnnotations : Element
     {
-        private Dictionary<string, Annotation> _annotations = new Dictionary<string, Annotation>();
+        private readonly Dictionary<string, Annotation> _annotations = new Dictionary<string, Annotation>();
 
         public int Count => _annotations.Count;
 
@@ -466,7 +466,7 @@ namespace GoogleKeep
             return ret;
         }
 
-        private Category _getCategoryNode()
+        private Category GetCategoryNode()
         {
             foreach (var annotation in _annotations.Values)
             {
@@ -480,12 +480,12 @@ namespace GoogleKeep
         {
             get
             {
-                var node = _getCategoryNode();
+                var node = GetCategoryNode();
                 return node?.CategoryValue;
             }
             set
             {
-                var node = _getCategoryNode();
+                var node = GetCategoryNode();
                 if (value == null)
                 {
                     if (node != null)
@@ -626,7 +626,7 @@ namespace GoogleKeep
 
     public class NodeCollaborators : Element
     {
-        private Dictionary<string, RoleValue> _collaborators = new Dictionary<string, RoleValue>();
+        private readonly Dictionary<string, RoleValue> _collaborators = new Dictionary<string, RoleValue>();
 
         public int Count => _collaborators.Count;
 
@@ -730,7 +730,7 @@ namespace GoogleKeep
 
     public class NodeLabels : Element
     {
-        private Dictionary<string, Label> _labels = new Dictionary<string, Label>();
+        private readonly Dictionary<string, Label> _labels = new Dictionary<string, Label>();
 
         public int Count => _labels.Count;
 
@@ -939,7 +939,7 @@ namespace GoogleKeep
         public NodeType? Type { get; set; }
         public virtual string Text { get; set; }
         public string Version { get; set; }
-        private Dictionary<string, Node> _children;
+        private readonly Dictionary<string, Node> _children;
         public NodeSettings Settings { get; set; }
         public NodeAnnotations Annotations { get; set; }
 
@@ -1026,8 +1026,8 @@ namespace GoogleKeep
         protected bool _archived = false;
         protected bool _pinned = false;
         protected string _title = "";
-        public NodeLabels labels { get; set; }
-        public NodeCollaborators collaborators { get; set; }
+        public NodeLabels Labels { get; set; }
+        public NodeCollaborators Collaborators { get; set; }
 
         public TopLevelNode(Dictionary<string, dynamic> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
         {
@@ -1035,11 +1035,11 @@ namespace GoogleKeep
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
             this._pinned = kwargs.GetValueOrDefault("isPinned", false);
             this._title = kwargs.GetValueOrDefault("title", "");
-            this.labels = new NodeLabels();
-            this.collaborators = new NodeCollaborators();
+            this.Labels = new NodeLabels();
+            this.Collaborators = new NodeCollaborators();
         }
 
-        public override bool Dirty => base.Dirty || labels.Dirty || collaborators.Dirty;
+        public override bool Dirty => base.Dirty || Labels.Dirty || Collaborators.Dirty;
 
         public override void Load(Dictionary<string, dynamic> raw)
         {
@@ -1048,8 +1048,8 @@ namespace GoogleKeep
             this._archived = raw.ContainsKey("isArchived") ? raw["isArchived"] : false;
             this._pinned = raw.ContainsKey("isPinned") ? raw["isPinned"] : false;
             this._title = raw.ContainsKey("title") ? raw["title"] : "";
-            this.labels.Load(raw.ContainsKey("labelIds") ? raw["labelIds"] : new List<string>());
-            this.collaborators.Load(
+            this.Labels.Load(raw.ContainsKey("labelIds") ? raw["labelIds"] : new List<string>());
+            this.Collaborators.Load(
                 raw.ContainsKey("roleInfo") ? raw["roleInfo"] : new List<string>(),
                 raw.ContainsKey("shareRequests") ? raw["shareRequests"] : new List<string>()
             );
@@ -1063,8 +1063,8 @@ namespace GoogleKeep
             ret["isArchived"] = this._archived;
             ret["isPinned"] = this._pinned;
             ret["title"] = this._title;
-            var labels = this.labels.Save(clean);
-            var (collaborators, requests) = this.collaborators.Save(clean);
+            var labels = this.Labels.Save(clean);
+            var (collaborators, requests) = this.Collaborators.Save(clean);
             if (labels.Count > 0)
                 ret["labelIds"] = labels;
             ret["collaborators"] = collaborators;
@@ -1208,7 +1208,7 @@ namespace GoogleKeep
 
         public static List<ListItem> SortedItems(List<ListItem> items)
         {
-            List<ListItem> SortFunc(ListItem x) => x.Items.SelectMany(item =>
+            static List<ListItem> SortFunc(ListItem x) => x.Items.SelectMany(item =>
             {
                 var res = new List<ListItem> { item };
                 res.AddRange(SortFunc(item));
@@ -1252,8 +1252,8 @@ namespace GoogleKeep
             this.ParentServerId = parentServerId;
             this.SuperListItemId = superListItemId;
             this.PrevSuperListItemId = null;
-            this._Subitems = new Dictionary<string, ListItem>();
-            this._Checked = false;
+            this._subitems = new Dictionary<string, ListItem>();
+            this._checked = false;
             this.Items = new List<ListItem>();
         }
 
@@ -1261,15 +1261,15 @@ namespace GoogleKeep
         public string ParentServerId { get; set; }
         public string SuperListItemId { get; set; }
         public string PrevSuperListItemId { get; set; }
-        private Dictionary<string, ListItem> _Subitems { get; }
-        protected bool _Checked { get; set; }
+        private Dictionary<string, ListItem> _subitems;
+        protected bool _checked;
 
         public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
             this.PrevSuperListItemId = this.SuperListItemId;
             this.SuperListItemId = raw.GetValueOrDefault("superListItemId");
-            this._Checked = raw.GetValueOrDefault("checked", false);
+            this._checked = raw.GetValueOrDefault("checked", false);
         }
 
         public override Dictionary<string, dynamic> Save(bool clean = true)
@@ -1277,7 +1277,7 @@ namespace GoogleKeep
             Dictionary<string, dynamic> ret = base.Save(clean);
             ret["parentServerId"] = this.ParentServerId;
             ret["superListItemId"] = this.SuperListItemId;
-            ret["checked"] = this._Checked;
+            ret["checked"] = this._checked;
             return ret;
         }
 
@@ -1302,7 +1302,7 @@ namespace GoogleKeep
                 {
                     var min = list.Items.Select(item => (int)item.Sort).Min();
                     var max = list.Items.Select(item => (int)item.Sort).Max();
-                    node.Sort = check ? max + SORT_DELTA : min - SORT_DELTA;
+                    node.Sort = check ? max + List.SORT_DELTA : min - List.SORT_DELTA;
                 }
             }
 
@@ -1333,10 +1333,10 @@ namespace GoogleKeep
 
         public bool Checked
         {
-            get => this._Checked;
+            get => this._checked;
             set
             {
-                this._Checked = value;
+                this._checked = value;
                 this.Touch(true);
             }
         }
@@ -1388,7 +1388,7 @@ namespace GoogleKeep
         {
             public int Compare(ListItem x, ListItem y)
             {
-                int CompareSubitems(ListItem a, ListItem b)
+                static int CompareSubitems(ListItem a, ListItem b)
                 {
                     var aSort = a.ParentItem == null ? a.Sort : a.ParentItem.Sort;
                     var bSort = b.ParentItem == null ? b.Sort : b.ParentItem.Sort;
@@ -1708,15 +1708,15 @@ namespace GoogleKeep
             double createTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             this.Id = this.GenerateId(createTime);
-            this._Name = "";
+            this._name = "";
             this.Timestamps = new NodeTimestamps(createTime);
-            this._Merged = NodeTimestamps.IntToDt(0);
+            this._merged = NodeTimestamps.IntToDt(0);
         }
 
         public string Id { get; private set; }
-        private string _Name { get; set; }
+        private string _name;
         public NodeTimestamps Timestamps { get; set; }
-        private DateTime _Merged { get; set; }
+        private DateTime _merged;
 
         private string GenerateId(double tz)
         {
@@ -1727,37 +1727,37 @@ namespace GoogleKeep
         {
             base.Load(raw);
             this.Id = raw["mainId"];
-            this._Name = raw["name"];
+            this._name = raw["name"];
             this.Timestamps.Load(raw["timestamps"]);
-            this._Merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"]) : NodeTimestamps.IntToDt(0);
+            this._merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"]) : NodeTimestamps.IntToDt(0);
         }
 
         public new Dictionary<string, dynamic> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["mainId"] = this.Id;
-            ret["name"] = this._Name;
+            ret["name"] = this._name;
             ret["timestamps"] = this.Timestamps.Save(clean);
-            ret["lastMerged"] = NodeTimestamps.DtToStr(this._Merged);
+            ret["lastMerged"] = NodeTimestamps.DtToStr(this._merged);
             return ret;
         }
 
         public string Name
         {
-            get => this._Name;
+            get => this._name;
             set
             {
-                this._Name = value;
+                this._name = value;
                 this.Touch(true);
             }
         }
 
         public DateTime Merged
         {
-            get => this._Merged;
+            get => this._merged;
             set
             {
-                this._Merged = value;
+                this._merged = value;
                 this.Touch();
             }
         }

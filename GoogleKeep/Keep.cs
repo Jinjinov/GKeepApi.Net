@@ -25,12 +25,12 @@ namespace GoogleKeep
         public string MasterToken { get; set; }
         public string AuthToken { get; set; }
         public string DeviceId { get; set; }
-        private readonly string[] _scopes;
+        private string[] _scopes;
 
-        UserCredential credential;
+        UserCredential _credential;
 
         // Path to a directory where the user's credentials will be stored (can be a temporary directory)
-        string credentialPath = "path/to/credentials-directory";
+        readonly string _credentialPath = "path/to/credentials-directory";
 
         public APIAuth(string[] scopes)
         {
@@ -47,7 +47,7 @@ namespace GoogleKeep
             string clientSecret = "YOUR_CLIENT_SECRET";
 
             // The scopes that your application needs access to
-            string[] scopes = new string[]
+            _scopes = new string[]
             {
                 "https://www.googleapis.com/auth/drive.readonly", // Replace with your desired scopes
                 // Add more scopes as needed for the services you want to access
@@ -56,12 +56,12 @@ namespace GoogleKeep
             // Create the credentials object
             using (var stream = new System.IO.FileStream("path/to/client-secrets.json", System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
-                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                _credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
                     scopes,
                     "user",
                     System.Threading.CancellationToken.None,
-                    new FileDataStore(credentialPath, true)).Result;
+                    new FileDataStore(_credentialPath, true)).Result;
             }
 
             // Obtain an OAuth token.
@@ -83,10 +83,10 @@ namespace GoogleKeep
         public string Refresh()
         {
             // Check if the access token needs to be refreshed
-            if (credential.Token.IsExpired(SystemClock.Default))
+            if (_credential.Token.IsExpired(SystemClock.Default))
             {
                 // Refresh the access token
-                bool success = credential.RefreshTokenAsync(CancellationToken.None).Result;
+                bool success = _credential.RefreshTokenAsync(CancellationToken.None).Result;
                 if (!success)
                 {
                     Console.WriteLine("Failed to refresh access token.");
@@ -95,7 +95,7 @@ namespace GoogleKeep
             }
 
             // Retrieve the refreshed access token
-            string accessToken = credential.Token.AccessToken;
+            string accessToken = _credential.Token.AccessToken;
 
             // Now you have the refreshed access token, and you can use it to make authorized requests to Google APIs.
 
@@ -109,10 +109,10 @@ namespace GoogleKeep
             try
             {
                 // Revoke the access token to invalidate it
-                credential.RevokeTokenAsync(System.Threading.CancellationToken.None).Wait();
+                _credential.RevokeTokenAsync(System.Threading.CancellationToken.None).Wait();
 
                 // Clear the stored user credentials from the FileDataStore
-                new FileDataStore(credentialPath, true).ClearAsync().Wait();
+                new FileDataStore(_credentialPath, true).ClearAsync().Wait();
 
                 Console.WriteLine("Logout successful.");
             }
@@ -130,13 +130,13 @@ namespace GoogleKeep
         protected readonly string _base_url;
         private APIAuth _auth;
 
-        string __version__ = "0.14.2";
+        readonly string _version = "0.14.2";
 
         public API(string base_url, APIAuth auth = null)
         {
             _base_url = base_url;
             _auth = auth;
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "x-gkeepapi/" + __version__);
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "x-gkeepapi/" + _version);
         }
 
         public APIAuth GetAuth()
@@ -221,15 +221,15 @@ namespace GoogleKeep
     {
         private const string API_URL = "https://www.googleapis.com/notes/v1/";
 
-        private string _session_id;
+        private readonly string _session_id;
 
         public KeepAPI(APIAuth auth = null) : base(API_URL, auth)
         {
             var create_time = DateTime.Now;
-            _session_id = _generateId(create_time);
+            _session_id = GenerateId(create_time);
         }
 
-        private static string _generateId(DateTime tz)
+        private static string GenerateId(DateTime tz)
         {
             return "s--" + ((long)(tz - new DateTime(1970, 1, 1)).TotalMilliseconds) + "--" + new Random().Next(1000000000, int.MaxValue);
         }
@@ -336,7 +336,7 @@ namespace GoogleKeep
     public class RemindersAPI : API
     {
         private const string API_URL = "https://www.googleapis.com/reminders/v1internal/reminders/";
-        private readonly Dictionary<string, object> static_params = new Dictionary<string, object>
+        private readonly Dictionary<string, object> _static_params = new Dictionary<string, object>
         {
             { "taskList", new List<Dictionary<string, string>>
                 {
@@ -499,7 +499,7 @@ namespace GoogleKeep
 
         public async Task<Dictionary<string, object>> List(bool master = true)
         {
-            var parameters = new Dictionary<string, object>(static_params);
+            var parameters = new Dictionary<string, object>(_static_params);
 
             if (master)
             {
@@ -544,7 +544,7 @@ namespace GoogleKeep
                 { "storageVersion", storage_version },
                 { "includeSnoozePresetUpdates", true }
             };
-            parameters = parameters.Concat(static_params).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            parameters = parameters.Concat(_static_params).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             return await Send(new Dictionary<string, object>
             {
@@ -569,16 +569,16 @@ namespace GoogleKeep
     public class Keep
     {
         // OAuth scopes
-        private string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
+        private readonly string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
 
-        private KeepAPI _keep_api;
-        private RemindersAPI _reminders_api;
-        private MediaAPI _media_api;
+        private readonly KeepAPI _keep_api;
+        private readonly RemindersAPI _reminders_api;
+        private readonly MediaAPI _media_api;
         private string _keep_version;
         private string _reminder_version;
-        private Dictionary<string, GoogleKeep.Label> _labels;
-        private Dictionary<string, GoogleKeep.TopLevelNode> _nodes;
-        private Dictionary<string, string> _sid_map;
+        private readonly Dictionary<string, GoogleKeep.Label> _labels;
+        private readonly Dictionary<string, GoogleKeep.Node> _nodes;
+        private readonly Dictionary<string, string> _sid_map;
 
         public Keep()
         {
@@ -588,7 +588,7 @@ namespace GoogleKeep
             _keep_version = null;
             _reminder_version = null;
             _labels = new Dictionary<string, GoogleKeep.Label>();
-            _nodes = new Dictionary<string, GoogleKeep.TopLevelNode>();
+            _nodes = new Dictionary<string, GoogleKeep.Node>();
             _sid_map = new Dictionary<string, string>();
 
             Clear();
@@ -642,7 +642,7 @@ namespace GoogleKeep
 
         public string GetMasterToken()
         {
-            return _keep_api.GetAuth().GetMasterToken();
+            return _keep_api.GetAuth().MasterToken;
         }
 
         private async Task Load(APIAuth auth, Dictionary<string, object> state = null, bool sync = true)
@@ -662,11 +662,11 @@ namespace GoogleKeep
 
         public Dictionary<string, object> Dump()
         {
-            var nodes = new List<GoogleKeep.TopLevelNode>();
+            var nodes = new List<GoogleKeep.Node>();
             foreach (var node in All())
             {
                 nodes.Add(node);
-                nodes.AddRange(node.Children.OfType<TopLevelNode>());
+                nodes.AddRange(node.Children.Values);
             }
 
             var serialized_labels = new List<Dictionary<string, object>>();
@@ -697,7 +697,7 @@ namespace GoogleKeep
             _keep_version = state["keep_version"].ToString();
         }
 
-        public GoogleKeep.TopLevelNode Get(string node_id)
+        public GoogleKeep.Node Get(string node_id)
         {
             return _nodes[GoogleKeep.Root.ID].Get(node_id) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(node_id));
         }
@@ -709,13 +709,13 @@ namespace GoogleKeep
                 throw new Exception("Not a top level node");
             }
 
-            _nodes[node.Id] = (GoogleKeep.TopLevelNode)node;
+            _nodes[node.Id] = node;
             _nodes[node.ParentId].Append(node, false);
         }
 
-        public IEnumerable<GoogleKeep.TopLevelNode> Find(
+        public IEnumerable<GoogleKeep.Node> Find(
             string query = null,
-            Func<GoogleKeep.TopLevelNode, bool> func = null,
+            Func<GoogleKeep.Node, bool> func = null,
             List<GoogleKeep.Label> labels = null,
             List<string> colors = null,
             bool? pinned = null,
@@ -832,9 +832,9 @@ namespace GoogleKeep
             return await _media_api.Get(blob);
         }
 
-        public IEnumerable<GoogleKeep.TopLevelNode> All()
+        public IEnumerable<GoogleKeep.Node> All()
         {
-            return _nodes[GoogleKeep.Root.ID].Children.OfType<TopLevelNode>();
+            return _nodes[GoogleKeep.Root.ID].Children.Values;
         }
 
         public async Task Sync(bool resync = false)
@@ -861,7 +861,7 @@ namespace GoogleKeep
                 bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
                 var changes = await _keep_api.Changes(
                     target_version: _keep_version,
-                    nodes: _findDirtyNodes().Select(n => n.Save()).ToList(),
+                    nodes: FindDirtyNodes().Select(n => n.Save()).ToList(),
                     labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
                 );
 
@@ -902,8 +902,8 @@ namespace GoogleKeep
 
         private void ParseNodes(List<Dictionary<string, object>> raw)
         {
-            var createdNodes = new List<GoogleKeep.TopLevelNode>();
-            var deletedNodes = new List<GoogleKeep.TopLevelNode>();
+            var createdNodes = new List<GoogleKeep.Node>();
+            var deletedNodes = new List<GoogleKeep.Node>();
             var listItemNodes = new List<GoogleKeep.ListItem>();
 
             foreach (var rawNode in raw)
@@ -944,7 +944,7 @@ namespace GoogleKeep
                     var prevSuperListItemId = listItem["prevSuperListItemId"].ToString();
                     var superListItemId = listItem["superListItemId"].ToString();
 
-                    var node = _nodes[prevSuperListItemId];
+                    var node = _nodes[prevSuperListItemId] as ListItem;
                     if (prevSuperListItemId != superListItemId)
                     {
                         node.Dedent(listItemNodes.Last(), false);
@@ -952,7 +952,7 @@ namespace GoogleKeep
 
                     if (superListItemId != null)
                     {
-                        node = _nodes[superListItemId];
+                        node = _nodes[superListItemId] as ListItem;
                         node.Indent(listItemNodes.Last(), false);
                     }
                 }
@@ -1025,20 +1025,20 @@ namespace GoogleKeep
             }
         }
 
-        private List<GoogleKeep.TopLevelNode> _findDirtyNodes()
+        private List<GoogleKeep.Node> FindDirtyNodes()
         {
             var foundIds = new Dictionary<string, object>();
-            var nodes = new List<GoogleKeep.TopLevelNode> { _nodes[GoogleKeep.Root.ID] };
+            var nodes = new List<GoogleKeep.Node> { _nodes[GoogleKeep.Root.ID] };
 
             while (nodes.Count > 0)
             {
                 var node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
-                nodes.AddRange(node.Children.OfType<TopLevelNode>());
+                nodes.AddRange(node.Children.Values);
             }
 
-            var dirtyNodes = new List<GoogleKeep.TopLevelNode>();
+            var dirtyNodes = new List<GoogleKeep.Node>();
             foreach (var node in _nodes.Values)
             {
                 if (node.Dirty)
@@ -1050,17 +1050,17 @@ namespace GoogleKeep
             return dirtyNodes;
         }
 
-        private void _clean()
+        private void Clean()
         {
             var foundIds = new Dictionary<string, object>();
-            var nodes = new List<GoogleKeep.TopLevelNode> { _nodes[GoogleKeep.Root.ID] };
+            var nodes = new List<GoogleKeep.Node> { _nodes[GoogleKeep.Root.ID] };
 
             while (nodes.Count > 0)
             {
                 var node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
-                nodes.AddRange(node.Children.OfType<TopLevelNode>());
+                nodes.AddRange(node.Children.Values);
             }
 
             foreach (var nodeId in _nodes.Keys.ToList())
