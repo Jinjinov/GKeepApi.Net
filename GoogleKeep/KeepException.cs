@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 
 /// <summary>
 /// exception.py
@@ -23,9 +24,8 @@ namespace GoogleKeep
     /// </summary>
     public class KeepException : Exception
     {
-        public KeepException(string message) : base(message)
-        {
-        }
+        public KeepException(string message) : base(message) { }
+        public KeepException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -33,9 +33,8 @@ namespace GoogleKeep
     /// </summary>
     public class LoginException : KeepException
     {
-        public LoginException(string message) : base(message)
-        {
-        }
+        public LoginException(string message) : base(message) { }
+        public LoginException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -56,9 +55,8 @@ namespace GoogleKeep
     /// </summary>
     public class LabelException : KeepException
     {
-        public LabelException(string message) : base(message)
-        {
-        }
+        public LabelException(string message) : base(message) { }
+        public LabelException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -66,9 +64,8 @@ namespace GoogleKeep
     /// </summary>
     public class SyncException : KeepException
     {
-        public SyncException(string message) : base(message)
-        {
-        }
+        public SyncException(string message) : base(message) { }
+        public SyncException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -76,9 +73,8 @@ namespace GoogleKeep
     /// </summary>
     public class ResyncRequiredException : SyncException
     {
-        public ResyncRequiredException(string message) : base(message)
-        {
-        }
+        public ResyncRequiredException(string message) : base(message) { }
+        public ResyncRequiredException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -86,9 +82,8 @@ namespace GoogleKeep
     /// </summary>
     public class UpgradeRecommendedException : SyncException
     {
-        public UpgradeRecommendedException(string message) : base(message)
-        {
-        }
+        public UpgradeRecommendedException(string message) : base(message) { }
+        public UpgradeRecommendedException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -96,9 +91,8 @@ namespace GoogleKeep
     /// </summary>
     public class MergeException : KeepException
     {
-        public MergeException(string message) : base(message)
-        {
-        }
+        public MergeException(string message) : base(message) { }
+        public MergeException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -106,9 +100,8 @@ namespace GoogleKeep
     /// </summary>
     public class InvalidException : KeepException
     {
-        public InvalidException(string message) : base(message)
-        {
-        }
+        public InvalidException(string message) : base(message) { }
+        public InvalidException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     /// <summary>
@@ -116,9 +109,14 @@ namespace GoogleKeep
     /// </summary>
     public class ParseException : KeepException
     {
-        public string Raw { get; }
+        public JsonElement Raw { get; }
 
-        public ParseException(string message, string raw) : base(message)
+        public ParseException(string message, JsonElement raw) : base(message)
+        {
+            Raw = raw;
+        }
+
+        public ParseException(string message, JsonElement raw, Exception innerException) : base(message, innerException)
         {
             Raw = raw;
         }

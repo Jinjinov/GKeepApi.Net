@@ -484,16 +484,6 @@ namespace GoogleKeep
         }
     }
 
-    /// <summary>
-    /// Exception for parse errors.
-    /// </summary>
-    public class ParseException : Exception
-    {
-        public ParseException(string message) : base(message) { }
-        public ParseException(string message, JsonElement raw) : base(message) { }
-        public ParseException(string message, JsonElement raw, Exception innerException) : base(message, innerException) { }
-    }
-
     public class Annotation : Element
     {
         /// <summary>
