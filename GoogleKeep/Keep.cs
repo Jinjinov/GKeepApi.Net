@@ -58,7 +58,7 @@ namespace GoogleKeep
             {
                 _credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
-                    scopes,
+                    _scopes,
                     "user",
                     System.Threading.CancellationToken.None,
                     new FileDataStore(_credentialPath, true)).Result;

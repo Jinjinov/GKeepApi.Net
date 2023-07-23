@@ -320,7 +320,11 @@ namespace GoogleKeep
         protected override void _load(Dictionary<string, object> raw)
         {
             base._load(raw);
-            _category = (CategoryValue)Enum.Parse(typeof(CategoryValue), raw["topicCategory"]["category"].ToString());
+
+            if (raw["topicCategory"] is Dictionary<string, object> topicCategory)
+            {
+                _category = (CategoryValue)Enum.Parse(typeof(CategoryValue), topicCategory["category"].ToString());
+            }
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -351,7 +355,11 @@ namespace GoogleKeep
         protected override void _load(Dictionary<string, object> raw)
         {
             base._load(raw);
-            _suggest = raw["taskAssist"]["suggestType"].ToString();
+
+            if (raw["taskAssist"] is Dictionary<string, object> taskAssist)
+            {
+                _suggest = taskAssist["suggestType"].ToString();
+            }
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -386,8 +394,12 @@ namespace GoogleKeep
             if (raw.ContainsKey("context"))
             {
                 var context = raw["context"] as Dictionary<string, object>;
-                foreach (var (key, entry) in context)
+                foreach (var pair in context)
+                {
+                    var key = pair.Key;
+                    var entry = pair.Value;
                     _entries[key] = NodeAnnotations.FromJson(new Dictionary<string, object> { { key, entry } });
+                }
             }
         }
 
@@ -671,8 +683,10 @@ namespace GoogleKeep
             var collaborators = new List<Dictionary<string, object>>();
             var requests = new List<Dictionary<string, object>>();
 
-            foreach (var (email, action) in _collaborators)
+            foreach (var pair in _collaborators)
             {
+                var email = pair.Key;
+                var action = pair.Value;
                 if (action is ShareRequestValue requestValue)
                 {
                     requests.Add(new Dictionary<string, object>
@@ -724,8 +738,10 @@ namespace GoogleKeep
         public List<string> All()
         {
             var collaboratorsList = new List<string>();
-            foreach (var (email, action) in _collaborators)
+            foreach (var pair in _collaborators)
             {
+                var email = pair.Key;
+                var action = pair.Value;
                 if (action == RoleValue.Owner || action == RoleValue.User || action == ShareRequestValue.Add)
                     collaboratorsList.Add(email);
             }
@@ -766,8 +782,10 @@ namespace GoogleKeep
         public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = new Dictionary<string, object>();
-            foreach (var (labelId, label) in _labels)
+            foreach (var pair in _labels)
             {
+                var labelId = pair.Key;
+                var label = pair.Value;
                 var labelDict = label.Save(clean);
                 ret[labelId] = labelDict.Count == 0 ? null : labelDict;
             }
@@ -1071,12 +1089,13 @@ namespace GoogleKeep
             ret["isPinned"] = this._pinned;
             ret["title"] = this._title;
             var labels = this.Labels.Save(clean);
-            var (collaborators, requests) = this.Collaborators.Save(clean);
+            //var (collaborators, requests) = this.Collaborators.Save(clean);
+            var dict = this.Collaborators.Save(clean);
             if (labels.Count > 0)
                 ret["labelIds"] = labels;
-            ret["collaborators"] = collaborators;
-            if (requests.Count > 0)
-                ret["shareRequests"] = requests;
+            ret["collaborators"] = dict.Keys;
+            if (dict.Values.Count > 0)
+                ret["shareRequests"] = dict.Values;
             return ret;
         }
 
