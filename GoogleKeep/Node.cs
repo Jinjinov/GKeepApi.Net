@@ -320,7 +320,7 @@ namespace GoogleKeep
             return ret;
         }
 
-        public CategoryValue Category
+        public CategoryValue CategoryValue
         {
             get => _category;
             set
@@ -1047,7 +1047,7 @@ namespace GoogleKeep
 
     public class TopLevelNode : Node
     {
-        protected static NodeType _TYPE = null;
+        protected NodeType _TYPE;
         protected ColorValue _color = ColorValue.White;
         protected bool _archived = false;
         protected bool _pinned = false;
@@ -1055,7 +1055,7 @@ namespace GoogleKeep
         public NodeLabels labels { get; set; }
         public NodeCollaborators collaborators { get; set; }
 
-        public TopLevelNode(Dictionary<string, dynamic> kwargs) : base(parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
+        public TopLevelNode(Dictionary<string, dynamic> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
         {
             this._color = (ColorValue)kwargs.GetValueOrDefault("color", ColorValue.White);
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
@@ -1145,18 +1145,19 @@ namespace GoogleKeep
 
         public List<Blob> Blobs => this.Children.FindAll(node => node is Blob).Cast<Blob>().ToList();
 
-        public List<NodeImage> Images => this.Blobs.FindAll(blob => blob.Blob is NodeImage).Select(blob => blob.Blob as NodeImage).ToList();
+        public List<NodeImage> Images => this.Blobs.FindAll(blob => blob.NodeBlob is NodeImage).Select(blob => blob.NodeBlob as NodeImage).ToList();
 
-        public List<NodeDrawing> Drawings => this.Blobs.FindAll(blob => blob.Blob is NodeDrawing).Select(blob => blob.Blob as NodeDrawing).ToList();
+        public List<NodeDrawing> Drawings => this.Blobs.FindAll(blob => blob.NodeBlob is NodeDrawing).Select(blob => blob.NodeBlob as NodeDrawing).ToList();
 
-        public List<NodeAudio> Audio => this.Blobs.FindAll(blob => blob.Blob is NodeAudio).Select(blob => blob.Blob as NodeAudio).ToList();
+        public List<NodeAudio> Audio => this.Blobs.FindAll(blob => blob.NodeBlob is NodeAudio).Select(blob => blob.NodeBlob as NodeAudio).ToList();
     }
 
     public class Note : TopLevelNode
     {
-        public override static NodeType _TYPE = NodeType.Note;
-
-        public Note(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: _TYPE) { }
+        public Note(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: NodeType.Note)
+        {
+            _TYPE = NodeType.Note;
+        }
 
         public ListItem GetTextNode()
         {
@@ -1195,10 +1196,12 @@ namespace GoogleKeep
 
     public class List : TopLevelNode
     {
-        public override static NodeType _TYPE = NodeType.List;
         public const int SORT_DELTA = 10000;
 
-        public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: _TYPE) { }
+        public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: NodeType.List)
+        {
+            _TYPE = NodeType.List;
+        }
 
         public ListItem Add(string text, bool check = false, int? sort = null)
         {
@@ -1695,10 +1698,10 @@ namespace GoogleKeep
         public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
             : base(NodeType.Blob, parentId, kwargs)
         {
-            Blob = null;
+            NodeBlob = null;
         }
 
-        public NodeBlob Blob { get; private set; }
+        public NodeBlob NodeBlob { get; private set; }
 
         public static NodeBlob FromJson(Dictionary<string, dynamic> raw)
         {
@@ -1728,15 +1731,15 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
-            Blob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
+            NodeBlob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
         }
 
         public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             var ret = base.Save(clean);
-            if (Blob != null)
+            if (NodeBlob != null)
             {
-                ret["blob"] = Blob.Save(clean);
+                ret["blob"] = NodeBlob.Save(clean);
             }
             return ret;
         }

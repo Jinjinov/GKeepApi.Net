@@ -317,9 +317,9 @@ namespace GoogleKeep
         public async Task<string> Get(Blob blob)
         {
             var url = _base_url + blob.Parent.ServerId + "/" + blob.ServerId;
-            if (blob.Blob.Type == GoogleKeep.BlobType.Drawing)
+            if (blob.NodeBlob.Type == GoogleKeep.BlobType.Drawing)
             {
-                url += "/" + (blob.Blob as NodeDrawing).DrawingInfo.DrawingId;
+                url += "/" + (blob.NodeBlob as NodeDrawing).DrawingInfo.DrawingId;
             }
 
             var response = await _Send(new Dictionary<string, object>
