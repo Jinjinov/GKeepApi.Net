@@ -239,13 +239,13 @@ namespace GoogleKeep
         {
             var ret = base.Save(clean);
             ret["webLink"] = new Dictionary<string, object>
-        {
-            { "title", _title },
-            { "url", _url },
-            { "imageUrl", _imageUrl },
-            { "provenanceUrl", _provenanceUrl },
-            { "description", _description }
-        };
+            {
+                { "title", _title },
+                { "url", _url },
+                { "imageUrl", _imageUrl },
+                { "provenanceUrl", _provenanceUrl },
+                { "description", _description }
+            };
             return ret;
         }
 
@@ -314,9 +314,9 @@ namespace GoogleKeep
         {
             var ret = base.Save(clean);
             ret["topicCategory"] = new Dictionary<string, object>
-        {
-            { "category", _category.ToString() }
-        };
+            {
+                { "category", _category.ToString() }
+            };
             return ret;
         }
 
@@ -345,9 +345,9 @@ namespace GoogleKeep
         {
             var ret = base.Save(clean);
             ret["taskAssist"] = new Dictionary<string, object>
-        {
-            { "suggestType", _suggest }
-        };
+            {
+                { "suggestType", _suggest }
+            };
             return ret;
         }
 
@@ -663,19 +663,19 @@ namespace GoogleKeep
                 if (action is ShareRequestValue requestValue)
                 {
                     requests.Add(new Dictionary<string, object>
-                {
-                    { "email", email },
-                    { "type", requestValue.Value }
-                });
+                    {
+                        { "email", email },
+                        { "type", requestValue.Value }
+                    });
                 }
                 else if (action is RoleValue roleValue)
                 {
                     collaborators.Add(new Dictionary<string, object>
-                {
-                    { "email", email },
-                    { "role", roleValue.Value },
-                    { "auxiliary_type", "None" }
-                });
+                    {
+                        { "email", email },
+                        { "role", roleValue.Value },
+                        { "auxiliary_type", "None" }
+                    });
                 }
             }
 
@@ -999,40 +999,6 @@ namespace GoogleKeep
         public bool Deleted
         {
             get { return Timestamps.Deleted != null && Timestamps.Deleted > NodeTimestamps.IntToDt(0); }
-        }
-
-        public void Load(Data raw)
-        {
-            // verify this is a valid type
-            NodeType rawType = raw.Type;
-            if (!Enum.IsDefined(typeof(NodeType), rawType))
-                throw new InvalidOperationException("Invalid node type: " + rawType);
-
-            Id = raw.Id;
-            ServerId = raw.ServerId ?? ServerId;
-            ParentId = raw.ParentId;
-            Sort = raw.Sort ?? Sort;
-            Version = raw.BaseVersion ?? Version;
-            Text = raw.Text ?? Text;
-            Timestamps.Load(raw.Timestamps);
-            Settings.Load(raw.NodeSettings);
-            Annotations.Load(raw.AnnotationsGroup);
-        }
-
-        public Data Save()
-        {
-            Data ret = new Data();
-            ret.Kind = "notes#node";
-            ret.Type = Type;
-            ret.Id = Id;
-            ret.ParentId = ParentId;
-            ret.Sort = Sort;
-            ret.Text = Text;
-            ret.ServerId = ServerId;
-            ret.Timestamps = Timestamps.Save();
-            ret.NodeSettings = Settings.Save();
-            ret.AnnotationsGroup = Annotations.Save();
-            return ret;
         }
     }
 
@@ -1752,7 +1718,7 @@ namespace GoogleKeep
             this.Id = this.GenerateId(createTime);
             this._Name = "";
             this.Timestamps = new NodeTimestamps(createTime);
-            this._Merged = NodeTimestamps.IntToDateTimeOffset(0);
+            this._Merged = NodeTimestamps.IntToDt(0);
         }
 
         public string Id { get; private set; }
@@ -1771,7 +1737,7 @@ namespace GoogleKeep
             this.Id = raw["mainId"];
             this._Name = raw["name"];
             this.Timestamps.Load(raw["timestamps"]);
-            this._Merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDateTimeOffset(raw["lastMerged"]) : NodeTimestamps.IntToDateTimeOffset(0);
+            this._Merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"]) : NodeTimestamps.IntToDt(0);
         }
 
         public new Dictionary<string, dynamic> Save(bool clean = true)
@@ -1780,7 +1746,7 @@ namespace GoogleKeep
             ret["mainId"] = this.Id;
             ret["name"] = this._Name;
             ret["timestamps"] = this.Timestamps.Save(clean);
-            ret["lastMerged"] = NodeTimestamps.DateTimeOffsetToStr(this._Merged);
+            ret["lastMerged"] = NodeTimestamps.DtToStr(this._Merged);
             return ret;
         }
 
