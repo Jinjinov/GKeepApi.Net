@@ -17,6 +17,11 @@ namespace GoogleKeep
         {
             Code = code;
         }
+
+        public APIException(int code, string message, Exception innerException) : base(message, innerException)
+        {
+            Code = code;
+        }
     }
 
     /// <summary>
@@ -45,6 +50,11 @@ namespace GoogleKeep
         public string Url { get; }
 
         public BrowserLoginRequiredException(string url, string message) : base(message)
+        {
+            Url = url;
+        }
+
+        public BrowserLoginRequiredException(string url, string message, Exception innerException) : base(message, innerException)
         {
             Url = url;
         }
