@@ -150,7 +150,7 @@ namespace GoogleKeep
             // You may need to handle dictionary operations, logging, and comparison logic manually
         }
 
-        public void Load(Dictionary<string, object> raw)
+        public virtual void Load(Dictionary<string, object> raw)
         {
             try
             {
@@ -177,7 +177,7 @@ namespace GoogleKeep
             return ret;
         }
 
-        public bool Dirty => _dirty;
+        public virtual bool Dirty => _dirty;
     }
 
     public class Annotation : Element, IElement
@@ -388,7 +388,7 @@ namespace GoogleKeep
 
         public List<IElement> All() => _entries.Values.ToList();
 
-        public bool Dirty => base.Dirty || _entries.Values.Any(annotation => annotation.Dirty);
+        public override bool Dirty => base.Dirty || _entries.Values.Any(annotation => annotation.Dirty);
 
         public void AddEntry(string key, IElement entry)
         {
@@ -609,9 +609,9 @@ namespace GoogleKeep
         public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
-            ret["newListItemPlacement"] = NewListItemPlacement.Value;
-            ret["graveyardState"] = GraveyardState.Value;
-            ret["checkedListItemsPolicy"] = CheckedListItemsPolicy.Value;
+            ret["newListItemPlacement"] = NewListItemPlacement;
+            ret["graveyardState"] = GraveyardState;
+            ret["checkedListItemsPolicy"] = CheckedListItemsPolicy;
             return ret;
         }
     }
@@ -846,12 +846,11 @@ namespace GoogleKeep
 
     public class Node : Element, ITimestamps
     {
-        public bool Dirty { get; set; }
+        public override bool Dirty { get; set; }
         public NodeTimestamps Timestamps { get; set; }
 
-        public Node(string id = null, NodeType? type = null, string parentId = null)
+        public Node(string id = null, NodeType? type = null, string parentId = null) : base()
         {
-            base();
             double createTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
 
             this.Parent = null;
@@ -881,7 +880,7 @@ namespace GoogleKeep
             return new Random().Next(0x0000000000000000, 0xffffffffffffffff);
         }
 
-        public void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
             // Verify this is a valid type
@@ -906,7 +905,7 @@ namespace GoogleKeep
             Annotations.Load(raw["annotationsGroup"]);
         }
 
-        public Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             Dictionary<string, dynamic> ret = base.Save(clean);
             ret["id"] = Id;
@@ -930,8 +929,11 @@ namespace GoogleKeep
         public string ServerId { get; set; }
         public string ParentId { get; set; }
         public NodeType? Type { get; set; }
-        public string Text { get; set; }
+        public virtual string Text { get; set; }
+        public string Version { get; set; }
         private Dictionary<string, Node> _children;
+        public NodeSettings Settings { get; set; }
+        public NodeAnnotations Annotations { get; set; }
 
         public Node Parent { get; set; }
         public IReadOnlyDictionary<string, Node> Children => _children;
@@ -1032,52 +1034,6 @@ namespace GoogleKeep
             ret.AnnotationsGroup = Annotations.Save();
             return ret;
         }
-
-        public void SetVersion(string version)
-        {
-            Version = version;
-            Moved = false;
-        }
-
-        public void ClearVersion()
-        {
-            Version = null;
-            Moved = false;
-        }
-
-        public void Load(Data raw)
-        {
-            // verify this is a valid type
-            NodeType rawType = raw.Type;
-            if (!Enum.IsDefined(typeof(NodeType), rawType))
-                throw new InvalidOperationException("Invalid node type: " + rawType);
-
-            Id = raw.Id;
-            ServerId = raw.ServerId ?? ServerId;
-            ParentId = raw.ParentId;
-            Sort = raw.Sort ?? Sort;
-            Version = raw.BaseVersion ?? Version;
-            Text = raw.Text ?? Text;
-            Timestamps.Load(raw.Timestamps);
-            Settings.Load(raw.NodeSettings);
-            Annotations.Load(raw.AnnotationsGroup);
-        }
-
-        public Data Save()
-        {
-            Data ret = new Data();
-            ret.Kind = "notes#node";
-            ret.Type = Type;
-            ret.Id = Id;
-            ret.ParentId = ParentId;
-            ret.Sort = Sort;
-            ret.Text = Text;
-            ret.ServerId = ServerId;
-            ret.Timestamps = Timestamps.Save();
-            ret.NodeSettings = Settings.Save();
-            ret.AnnotationsGroup = Annotations.Save();
-            return ret;
-        }
     }
 
     public class Root : Node
@@ -1099,7 +1055,7 @@ namespace GoogleKeep
         public NodeLabels labels { get; set; }
         public NodeCollaborators collaborators { get; set; }
 
-        public TopLevelNode(Dictionary<string, dynamic> kwargs) : base(parentId: Root.ID, id_: kwargs.GetValueOrDefault("id"))
+        public TopLevelNode(Dictionary<string, dynamic> kwargs) : base(parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
         {
             this._color = (ColorValue)kwargs.GetValueOrDefault("color", ColorValue.White);
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
@@ -1111,7 +1067,7 @@ namespace GoogleKeep
 
         public override bool Dirty => base.Dirty || labels.Dirty || collaborators.Dirty;
 
-        public void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
             this._color = (ColorValue)(raw.ContainsKey("color") ? raw["color"] : ColorValue.White);
@@ -1126,7 +1082,7 @@ namespace GoogleKeep
             this._moved = raw.ContainsKey("moved");
         }
 
-        public Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             Dictionary<string, dynamic> ret = base.Save(clean);
             ret["color"] = this._color;
@@ -1185,7 +1141,7 @@ namespace GoogleKeep
 
         public string Url => "https://keep.google.com/u/0/#" + _TYPE.ToString().ToLower() + "/" + this.Id;
 
-        public bool Dirty => base.Dirty || this.labels.Dirty || this.collaborators.Dirty;
+        public override bool Dirty => base.Dirty || this.labels.Dirty || this.collaborators.Dirty;
 
         public List<Blob> Blobs => this.Children.FindAll(node => node is Blob).Cast<Blob>().ToList();
 
@@ -1198,9 +1154,9 @@ namespace GoogleKeep
 
     public class Note : TopLevelNode
     {
-        private static NodeType _TYPE = NodeType.Note;
+        public override static NodeType _TYPE = NodeType.Note;
 
-        public Note(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type_: _TYPE) { }
+        public Note(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: _TYPE) { }
 
         public ListItem GetTextNode()
         {
@@ -1215,7 +1171,7 @@ namespace GoogleKeep
             return null;
         }
 
-        public string Text
+        public override string Text
         {
             get
             {
@@ -1239,10 +1195,10 @@ namespace GoogleKeep
 
     public class List : TopLevelNode
     {
-        private static NodeType _TYPE = NodeType.List;
+        public override static NodeType _TYPE = NodeType.List;
         public const int SORT_DELTA = 10000;
 
-        public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type_: _TYPE) { }
+        public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: _TYPE) { }
 
         public ListItem Add(string text, bool check = false, int? sort = null)
         {
@@ -1273,7 +1229,7 @@ namespace GoogleKeep
             return node;
         }
 
-        public string Text => string.Join(Environment.NewLine, new List<string> { this.Title }.Concat(this.Items.Select(node => node.ToString())));
+        public override string Text => string.Join(Environment.NewLine, new List<string> { this.Title }.Concat(this.Items.Select(node => node.ToString())));
 
         public static List<SortedListItem> SortedItems(List<SortedListItem> items)
         {
@@ -1287,13 +1243,13 @@ namespace GoogleKeep
             return SortFunc(items[0]);
         }
 
-        public List<SortedListItem> Items => this.SortedItems(this.GetItems());
+        public List<SortedListItem> Items => SortedItems(this.GetItems());
 
-        public List<SortedListItem> Checked => this.SortedItems(this.GetItems(checked_: true));
+        public List<SortedListItem> Checked => SortedItems(this.GetItems(checked_: true));
 
-        public List<SortedListItem> Unchecked => this.SortedItems(this.GetItems(checked_: false));
+        public List<SortedListItem> Unchecked => SortedItems(this.GetItems(checked_: false));
 
-        public void SortItems(Comparison<SortListItem> comparison)
+        public void SortItems(Comparison<SortedListItem> comparison)
         {
             this.GetItems().Sort(comparison);
             var sortValue = new Random().Next(1000000000, int.MaxValue);
@@ -1356,7 +1312,7 @@ namespace GoogleKeep
 
         public bool Indented => this.ParentItem != null;
 
-        public bool Checked
+        public override bool Checked
         {
             get => this._Checked;
             set
@@ -1412,7 +1368,7 @@ namespace GoogleKeep
     public class ListItem : Node
     {
         public ListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(type_: NodeType.ListItem, parentId: parentId, kwargs: kwargs)
+            : base(type: NodeType.ListItem, parentId: parentId, kwargs: kwargs)
         {
             this.ParentItem = null;
             this.ParentServerId = parentServerId;
@@ -1429,7 +1385,7 @@ namespace GoogleKeep
         private Dictionary<string, ListItem> _Subitems { get; }
         protected bool _Checked { get; set; }
 
-        public void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
             this.PrevSuperListItemId = this.SuperListItemId;
@@ -1437,7 +1393,7 @@ namespace GoogleKeep
             this._Checked = raw.GetValueOrDefault("checked", false);
         }
 
-        public Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             Dictionary<string, dynamic> ret = base.Save(clean);
             ret["parentServerId"] = this.ParentServerId;
@@ -1496,7 +1452,7 @@ namespace GoogleKeep
             }
         }
 
-        public bool Checked
+        public virtual bool Checked
         {
             get => this._Checked;
             set
@@ -1808,7 +1764,7 @@ namespace GoogleKeep
             return $"tag.{string.Join("", Enumerable.Range(0, 12).Select(_ => "abcdefghijklmnopqrstuvwxyz0123456789"[new Random().Next(36)]))}.{(long)(tz * 1000)}";
         }
 
-        public void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
             this.Id = raw["mainId"];
@@ -1847,7 +1803,7 @@ namespace GoogleKeep
             }
         }
 
-        public bool Dirty => base.Dirty || this.Timestamps.Dirty;
+        public override bool Dirty => base.Dirty || this.Timestamps.Dirty;
 
         public override string ToString()
         {
