@@ -1,9 +1,13 @@
-﻿using System;
-using System.Net.Http.Headers;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Util;
+using Google.Apis.Util.Store;
+using System;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// __init__.py
@@ -23,6 +27,11 @@ namespace GoogleKeep
         public string DeviceId { get; set; }
         private readonly string[] _scopes;
 
+        UserCredential credential;
+
+        // Path to a directory where the user's credentials will be stored (can be a temporary directory)
+        string credentialPath = "path/to/credentials-directory";
+
         public APIAuth(string[] scopes)
         {
             _scopes = scopes;
@@ -33,22 +42,27 @@ namespace GoogleKeep
             Email = email;
             DeviceId = deviceId;
 
-            // Obtain a master token.
-            var res = gpsoauth.perform_master_login(Email, password, DeviceId);
+            // Your Google API client ID and client secret
+            string clientId = "YOUR_CLIENT_ID";
+            string clientSecret = "YOUR_CLIENT_SECRET";
 
-            // Bail if browser login is required.
-            if (res.ContainsKey("Error") && res["Error"] == "NeedsBrowser")
+            // The scopes that your application needs access to
+            string[] scopes = new string[]
             {
-                throw new BrowserLoginRequiredException(res["Url"]);
-            }
+                "https://www.googleapis.com/auth/drive.readonly", // Replace with your desired scopes
+                // Add more scopes as needed for the services you want to access
+            };
 
-            // Bail if no token was returned.
-            if (!res.ContainsKey("Token"))
+            // Create the credentials object
+            using (var stream = new System.IO.FileStream("path/to/client-secrets.json", System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
-                throw new LoginException(res.ContainsKey("Error") ? res["Error"] : null, res.ContainsKey("ErrorDetail") ? res["ErrorDetail"] : null);
+                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    scopes,
+                    "user",
+                    System.Threading.CancellationToken.None,
+                    new FileDataStore(credentialPath, true)).Result;
             }
-
-            MasterToken = res["Token"];
 
             // Obtain an OAuth token.
             Refresh();
@@ -68,36 +82,44 @@ namespace GoogleKeep
 
         public string Refresh()
         {
-            // Obtain an OAuth token with the necessary scopes by pretending to be
-            // the keep android client.
-            var res = gpsoauth.perform_oauth(
-                Email,
-                MasterToken,
-                DeviceId,
-                service: _scopes,
-                app: "com.google.android.keep",
-                client_sig: "38918a453d07199354f8b19af05ec6562ced5788"
-            );
-
-            // Bail if no token was returned.
-            if (!res.ContainsKey("Auth"))
+            // Check if the access token needs to be refreshed
+            if (credential.Token.IsExpired(SystemClock.Default))
             {
-                if (!res.ContainsKey("Token"))
+                // Refresh the access token
+                bool success = credential.RefreshTokenAsync(CancellationToken.None).Result;
+                if (!success)
                 {
-                    throw new LoginException(res.ContainsKey("Error") ? res["Error"] : null);
+                    Console.WriteLine("Failed to refresh access token.");
+                    return null;
                 }
             }
 
-            AuthToken = res["Auth"];
-            return AuthToken;
+            // Retrieve the refreshed access token
+            string accessToken = credential.Token.AccessToken;
+
+            // Now you have the refreshed access token, and you can use it to make authorized requests to Google APIs.
+
+            Console.WriteLine("Refreshed Access Token: " + accessToken);
+
+            return accessToken;
         }
 
         public void Logout()
         {
-            MasterToken = null;
-            AuthToken = null;
-            Email = null;
-            DeviceId = null;
+            try
+            {
+                // Revoke the access token to invalidate it
+                credential.RevokeTokenAsync(System.Threading.CancellationToken.None).Wait();
+
+                // Clear the stored user credentials from the FileDataStore
+                new FileDataStore(credentialPath, true).ClearAsync().Wait();
+
+                Console.WriteLine("Logout successful.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Logout failed: " + ex.Message);
+            }
         }
     }
 
