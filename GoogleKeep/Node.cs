@@ -185,7 +185,17 @@ namespace GoogleKeep
             return ret;
         }
 
-        public virtual bool Dirty => _dirty;
+        public virtual bool Dirty
+        {
+            get
+            {
+                return _dirty;
+            }
+            set
+            {
+                _dirty = value;
+            }
+        }
     }
 
     public class Annotation : Element, IElement
@@ -1050,7 +1060,7 @@ namespace GoogleKeep
                 raw.ContainsKey("roleInfo") ? raw["roleInfo"] : new List<string>(),
                 raw.ContainsKey("shareRequests") ? raw["shareRequests"] : new List<string>()
             );
-            this._moved = raw.ContainsKey("moved");
+            this.Moved = raw.ContainsKey("moved");
         }
 
         public override Dictionary<string, dynamic> Save(bool clean = true)
@@ -1146,7 +1156,7 @@ namespace GoogleKeep
             get
             {
                 var node = this.GetTextNode();
-                return node != null ? node.Text : this._Text;
+                return node != null ? node.Text : base.Text;
             }
             set
             {
