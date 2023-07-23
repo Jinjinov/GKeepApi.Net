@@ -606,7 +606,7 @@ namespace GoogleKeep
             _nodes[GoogleKeep.Root.ID] = root_node;
         }
 
-        public bool Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        public async Task<bool> Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
         {
             var auth = new APIAuth(OAUTH_SCOPES);
             if (device_id == null)
@@ -617,13 +617,13 @@ namespace GoogleKeep
             var ret = auth.Login(email, password, device_id);
             if (ret)
             {
-                Load(auth, state, sync);
+                await Load(auth, state, sync);
             }
 
             return ret;
         }
 
-        public bool Resume(string email, string master_token, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        public async Task<bool> Resume(string email, string master_token, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
         {
             var auth = new APIAuth(OAUTH_SCOPES);
             if (device_id == null)
@@ -634,7 +634,7 @@ namespace GoogleKeep
             var ret = auth.Load(email, master_token, device_id);
             if (ret)
             {
-                Load(auth, state, sync);
+                await Load(auth, state, sync);
             }
 
             return ret;
@@ -645,7 +645,7 @@ namespace GoogleKeep
             return _keep_api.GetAuth().GetMasterToken();
         }
 
-        private void Load(APIAuth auth, Dictionary<string, object> state = null, bool sync = true)
+        private async Task Load(APIAuth auth, Dictionary<string, object> state = null, bool sync = true)
         {
             _keep_api.SetAuth(auth);
             _reminders_api.SetAuth(auth);
@@ -656,7 +656,7 @@ namespace GoogleKeep
             }
             if (sync)
             {
-                Sync(true);
+                await Sync(true);
             }
         }
 
@@ -827,9 +827,9 @@ namespace GoogleKeep
             return _labels.Values;
         }
 
-        public string GetMediaLink(GoogleKeep.Blob blob)
+        public async Task<string> GetMediaLink(GoogleKeep.Blob blob)
         {
-            return _media_api.Get(blob);
+            return await _media_api.Get(blob);
         }
 
         public IEnumerable<GoogleKeep.TopLevelNode> All()
@@ -837,14 +837,14 @@ namespace GoogleKeep
             return _nodes[GoogleKeep.Root.ID].Children.OfType<TopLevelNode>();
         }
 
-        public void Sync(bool resync = false)
+        public async Task Sync(bool resync = false)
         {
             if (resync)
             {
                 Clear();
             }
 
-            SyncNotes(resync);
+            await SyncNotes(resync);
         }
 
         private void SyncReminders(bool resync = false)
@@ -852,14 +852,14 @@ namespace GoogleKeep
             // TODO: Implementation for syncing reminders (if needed).
         }
 
-        private void SyncNotes(bool resync = false)
+        private async Task SyncNotes(bool resync = false)
         {
             while (true)
             {
                 Console.WriteLine($"Starting keep sync: {_keep_version}");
 
                 bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
-                var changes = _keep_api.Changes(
+                var changes = await _keep_api.Changes(
                     target_version: _keep_version,
                     nodes: _findDirtyNodes().Select(n => n.Save()).ToList(),
                     labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
@@ -938,7 +938,7 @@ namespace GoogleKeep
                     }
                 }
 
-                if (rawNode.TryGetValue("listItem", out var listItem))
+                if (rawNode.TryGetValue("listItem", out var listItemTemp) && listItemTemp is Dictionary<string, object> listItem)
                 {
                     var listItemId = listItem["id"].ToString();
                     var prevSuperListItemId = listItem["prevSuperListItemId"].ToString();
