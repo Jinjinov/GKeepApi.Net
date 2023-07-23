@@ -815,7 +815,7 @@ namespace GoogleKeep
             if (_labels.TryGetValue(label_id, out var label))
             {
                 label.Delete();
-                foreach (var node in All())
+                foreach (var node in All().OfType<TopLevelNode>())
                 {
                     node.Labels.Remove(label);
                 }
@@ -982,7 +982,7 @@ namespace GoogleKeep
                 Console.WriteLine($"Deleted node: {node.Id}");
             }
 
-            foreach (var node in All())
+            foreach (var node in All().OfType<TopLevelNode>())
             {
                 foreach (var labelId in node.Labels.Keys)
                 {
