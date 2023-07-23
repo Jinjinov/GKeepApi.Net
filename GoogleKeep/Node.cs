@@ -188,17 +188,6 @@ namespace GoogleKeep
         public bool Dirty => _dirty;
     }
 
-    public class ParseException : Exception
-    {
-        public ParseException(string message, Dictionary<string, object> raw, Exception innerException)
-            : base(message, innerException)
-        {
-            RawData = raw;
-        }
-
-        public Dictionary<string, object> RawData { get; }
-    }
-
     public class Annotation : Element, IElement
     {
         public string Id { get; private set; }
@@ -317,18 +306,6 @@ namespace GoogleKeep
                 _dirty = true;
             }
         }
-    }
-
-    public enum CategoryValue
-    {
-        Books,
-        Food,
-        Movies,
-        Music,
-        Places,
-        Quotes,
-        Travel,
-        TV
     }
 
     public class Category : Annotation, IElement
@@ -1993,46 +1970,6 @@ namespace GoogleKeep
         public bool Dirty => this._LabelIds.Count > 0;
     }
 
-    public enum ColorValue
-    {
-        Default = 0,
-        White = 1,
-        Blue = 2,
-        Green = 3,
-        Yellow = 4,
-        Orange = 5,
-        Red = 6,
-        Purple = 7,
-        Pink = 8,
-        Brown = 9,
-        Gray = 10
-    }
-
-    public enum BlobType
-    {
-        Unknown,
-        Drawing,
-        Image,
-        Audio
-    }
-
-    public enum NewListItemPlacementValue
-    {
-        Bottom,
-        Top
-    }
-
-    public enum NodeType
-    {
-        Note,
-        List,
-        ListItem,
-        Blob,
-        Drawing,
-        Image,
-        Audio
-    }
-
     public abstract class Node : Element
     {
         public Node(string parentId = null, string id_ = null, NodeType type_ = NodeType.Unknown, DateTime created = default, DateTime modified = default)
@@ -2186,7 +2123,7 @@ namespace GoogleKeep
         }
     }
 
-    public class Label : Element, ITimestampsMixin
+    public class Label : Element, ITimestamps
     {
         public Label()
         {

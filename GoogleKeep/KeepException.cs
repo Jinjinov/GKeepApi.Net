@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Text.Json;
+using System.Collections.Generic;
 
 /// <summary>
 /// exception.py
@@ -119,14 +119,14 @@ namespace GoogleKeep
     /// </summary>
     public class ParseException : KeepException
     {
-        public JsonElement Raw { get; }
+        public Dictionary<string, object> Raw { get; }
 
-        public ParseException(string message, JsonElement raw) : base(message)
+        public ParseException(string message, Dictionary<string, object> raw) : base(message)
         {
             Raw = raw;
         }
 
-        public ParseException(string message, JsonElement raw, Exception innerException) : base(message, innerException)
+        public ParseException(string message, Dictionary<string, object> raw, Exception innerException) : base(message, innerException)
         {
             Raw = raw;
         }
