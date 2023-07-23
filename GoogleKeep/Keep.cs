@@ -716,13 +716,15 @@ namespace GoogleKeep
         public IEnumerable<GoogleKeep.Node> Find(
             object query = null,
             Func<GoogleKeep.Node, bool> func = null,
-            List<GoogleKeep.Label> labels = null,
-            List<string> colors = null,
+            List<object> labels = null,
+            List<GoogleKeep.ColorValue> colors = null,
             bool? pinned = null,
             bool? archived = null,
             bool trashed = false)
         {
-            labels = labels?.Select(l => l.Id).ToList();
+            if (labels != null)
+                labels = labels.Select(l => l is GoogleKeep.Label lbl ? lbl.Id : l).ToList();
+
             return All().Where(node =>
             {
                 return (query == null ||
@@ -787,7 +789,7 @@ namespace GoogleKeep
             return node;
         }
 
-        public GoogleKeep.Label FindLabel(string query, bool create = false)
+        public GoogleKeep.Label FindLabel(object query, bool create = false)
         {
             var is_str = query is string;
             var name = is_str ? (string)query : null;
