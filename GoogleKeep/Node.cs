@@ -458,7 +458,7 @@ namespace GoogleKeep
             return ret;
         }
 
-        private Annotation _getCategoryNode()
+        private Category _getCategoryNode()
         {
             foreach (var annotation in _annotations.Values)
             {
@@ -473,7 +473,7 @@ namespace GoogleKeep
             get
             {
                 var node = _getCategoryNode();
-                return node?.Category;
+                return node?.CategoryValue;
             }
             set
             {
@@ -490,7 +490,7 @@ namespace GoogleKeep
                         node = new Category();
                         _annotations[node.Id] = node;
                     }
-                    node.Category = value.Value;
+                    node.CategoryValue = value.Value;
                 }
                 _dirty = true;
             }
@@ -550,10 +550,10 @@ namespace GoogleKeep
             base._load(raw);
             if (raw.ContainsKey("created"))
                 Created = StrToDt(raw["created"].ToString());
-            Deleted = raw.ContainsKey("deleted") ? StrToDt(raw["deleted"].ToString()) : null;
-            Trashed = raw.ContainsKey("trashed") ? StrToDt(raw["trashed"].ToString()) : null;
+            Deleted = raw.ContainsKey("deleted") ? (DateTime?)StrToDt(raw["deleted"].ToString()) : null;
+            Trashed = raw.ContainsKey("trashed") ? (DateTime?)StrToDt(raw["trashed"].ToString()) : null;
             Updated = StrToDt(raw["updated"].ToString());
-            Edited = raw.ContainsKey("userEdited") ? StrToDt(raw["userEdited"].ToString()) : null;
+            Edited = raw.ContainsKey("userEdited") ? (DateTime?)StrToDt(raw["userEdited"].ToString()) : null;
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1161,7 +1161,7 @@ namespace GoogleKeep
 
         public ListItem GetTextNode()
         {
-            foreach (var child_node in this.Children)
+            foreach (var child_node in this.Children.Values)
             {
                 if (child_node is ListItem listItem)
                 {
@@ -1265,7 +1265,7 @@ namespace GoogleKeep
 
         public override string ToString() => string.Join(Environment.NewLine, new List<string> { this.Title }.Concat(this.Items.Select(item => item.ToString())));
 
-        private List<SortedListItem> GetItems(bool? checked_ = null) => this.Children
+        private List<SortedListItem> GetItems(bool? checked_ = null) => this.Children.Values
             .Where(node => node is SortedListItem listItem && (!checked_.HasValue || listItem.Checked == checked_.Value))
             .Cast<SortedListItem>()
             .ToList();
@@ -1696,7 +1696,7 @@ namespace GoogleKeep
     };
 
         public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(NodeType.Blob, parentId, kwargs)
+            : base(type:NodeType.Blob, parentId:parentId, kwargs)
         {
             NodeBlob = null;
         }

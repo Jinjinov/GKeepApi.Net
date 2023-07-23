@@ -569,7 +569,7 @@ namespace GoogleKeep
     public class Keep
     {
         // OAuth scopes
-        private const string OAUTH_SCOPES = "oauth2:https://www.googleapis.com/auth/memento https://www.googleapis.com/auth/reminders";
+        private string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
 
         private KeepAPI _keep_api;
         private RemindersAPI _reminders_api;
@@ -666,7 +666,7 @@ namespace GoogleKeep
             foreach (var node in All())
             {
                 nodes.Add(node);
-                nodes.AddRange(node.Children);
+                nodes.AddRange(node.Children.OfType<TopLevelNode>());
             }
 
             var serialized_labels = new List<Dictionary<string, object>>();
@@ -834,7 +834,7 @@ namespace GoogleKeep
 
         public IEnumerable<GoogleKeep.TopLevelNode> All()
         {
-            return _nodes[GoogleKeep.Root.ID].Children;
+            return _nodes[GoogleKeep.Root.ID].Children.OfType<TopLevelNode>();
         }
 
         public void Sync(bool resync = false)
@@ -1035,7 +1035,7 @@ namespace GoogleKeep
                 var node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
-                nodes.AddRange(node.Children);
+                nodes.AddRange(node.Children.OfType<TopLevelNode>());
             }
 
             var dirtyNodes = new List<GoogleKeep.TopLevelNode>();
@@ -1060,7 +1060,7 @@ namespace GoogleKeep
                 var node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
-                nodes.AddRange(node.Children);
+                nodes.AddRange(node.Children.OfType<TopLevelNode>());
             }
 
             foreach (var nodeId in _nodes.Keys.ToList())
