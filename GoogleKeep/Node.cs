@@ -215,12 +215,7 @@ namespace GoogleKeep
 
         private static string GenerateAnnotationId()
         {
-            return string.Format("{0:x8}-{1:x4}-{2:x4}-{3:x4}-{4:x12}",
-                new Random().Next(0x00000000, 0xffffffff),
-                new Random().Next(0x0000, 0xffff),
-                new Random().Next(0x0000, 0xffff),
-                new Random().Next(0x0000, 0xffff),
-                new Random().Next(0x000000000000, 0xffffffffffff));
+            return Guid.NewGuid().ToString();
         }
     }
 
@@ -885,7 +880,9 @@ namespace GoogleKeep
 
         private long RandomId()
         {
-            return new Random().Next(0x0000000000000000, 0xffffffffffffffff);
+            byte[] buffer = new byte[8];
+            new Random().NextBytes(buffer);
+            return BitConverter.ToInt64(buffer, 0);
         }
 
         public override void Load(Dictionary<string, dynamic> raw)
