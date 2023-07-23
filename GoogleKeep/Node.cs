@@ -665,7 +665,7 @@ namespace GoogleKeep
                     requests.Add(new Dictionary<string, object>
                     {
                         { "email", email },
-                        { "type", requestValue.Value }
+                        { "type", requestValue }
                     });
                 }
                 else if (action is RoleValue roleValue)
@@ -673,7 +673,7 @@ namespace GoogleKeep
                     collaborators.Add(new Dictionary<string, object>
                     {
                         { "email", email },
-                        { "role", roleValue.Value },
+                        { "role", roleValue },
                         { "auxiliary_type", "None" }
                     });
                 }
@@ -1180,15 +1180,15 @@ namespace GoogleKeep
             }
             else if (items.Count > 0)
             {
-                var func = new Func<int, int, int>((a, b) => Math.Max(a, b));
+                var func = new Func<long, long, long>((a, b) => Math.Max(a, b));
                 var delta = SORT_DELTA;
                 if (sort == NewListItemPlacementValue.Bottom)
                 {
-                    func = new Func<int, int, int>((a, b) => Math.Min(a, b));
+                    func = new Func<long, long, long>((a, b) => Math.Min(a, b));
                     delta *= -1;
                 }
 
-                node.Sort = func(items.Max(item => (int)item.Sort), node.Sort) + delta;
+                node.Sort = func(items.Max(item => item.Sort), node.Sort) + delta;
             }
 
             this.Append(node, true);
@@ -1679,7 +1679,9 @@ namespace GoogleKeep
                 return null;
             }
 
-            if (!_blobTypeMap.TryGetValue(Enum.TryParse(raw["type"], out BlobType type) ? type : BlobType.Unknown, out var bcls))
+            Type? bcls = null;
+
+            if (!Enum.TryParse(raw["type"], out BlobType type) || !_blobTypeMap.TryGetValue(type, out bcls))
             {
                 // Handle unknown blob types
                 // logger.Warning("Unknown blob type: " + type);
@@ -1723,8 +1725,8 @@ namespace GoogleKeep
 
         public string Id { get; private set; }
         private string _Name { get; set; }
-        public NodeTimestamps Timestamps { get; private set; }
-        private DateTimeOffset _Merged { get; set; }
+        public NodeTimestamps Timestamps { get; set; }
+        private DateTime _Merged { get; set; }
 
         private string GenerateId(double tz)
         {
@@ -1760,7 +1762,7 @@ namespace GoogleKeep
             }
         }
 
-        public DateTimeOffset Merged
+        public DateTime Merged
         {
             get => this._Merged;
             set

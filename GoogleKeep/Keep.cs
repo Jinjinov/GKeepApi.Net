@@ -875,12 +875,12 @@ namespace GoogleKeep
                     throw new UpgradeRecommendedException("Upgrade recommended");
                 }
 
-                if (changes.TryGetValue("userInfo", out var userInfo))
+                if (changes.TryGetValue("userInfo", out var userInfoTemp) && userInfoTemp is Dictionary<string, object> userInfo)
                 {
                     ParseUserInfo(userInfo);
                 }
 
-                if (changes.TryGetValue("nodes", out var nodes))
+                if (changes.TryGetValue("nodes", out var nodesTemp) && nodesTemp is List<Dictionary<string, object>> nodes)
                 {
                     ParseNodes(nodes);
                 }
