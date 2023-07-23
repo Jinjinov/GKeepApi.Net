@@ -12,6 +12,14 @@ using System.Text.Json.Serialization;
 /// </summary>
 namespace GoogleKeep
 {
+    public static class DictionaryExtensions
+    {
+        public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default)
+        {
+            return dictionary.TryGetValue(key, out TValue value) ? value : defaultValue;
+        }
+    }
+
     public enum NodeType
     {
         [JsonPropertyName("NOTE")]
