@@ -859,7 +859,7 @@ namespace GoogleKeep
             this.ServerId = null;
             this.ParentId = parentId;
             this.Type = type;
-            this.Sort = new Random().Next(1000000000, 9999999999);
+            this.Sort = new Random().Next(1000000000, int.MaxValue);
             this.Version = null;
             this.Text = "";
             this._children = new Dictionary<string, Node>();
@@ -1240,7 +1240,7 @@ namespace GoogleKeep
     public class List : TopLevelNode
     {
         private static NodeType _TYPE = NodeType.List;
-        private const int SORT_DELTA = 10000;
+        public const int SORT_DELTA = 10000;
 
         public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type_: _TYPE) { }
 
@@ -1296,7 +1296,7 @@ namespace GoogleKeep
         public void SortItems(Comparison<SortListItem> comparison)
         {
             this.GetItems().Sort(comparison);
-            var sortValue = new Random().Next(1000000000, 9999999999);
+            var sortValue = new Random().Next(1000000000, int.MaxValue);
             foreach (var node in this.GetItems())
             {
                 node.Sort = sortValue;
@@ -1427,7 +1427,7 @@ namespace GoogleKeep
         public string SuperListItemId { get; set; }
         public string PrevSuperListItemId { get; set; }
         private Dictionary<string, ListItem> _Subitems { get; }
-        private bool _Checked { get; set; }
+        protected bool _Checked { get; set; }
 
         public void Load(Dictionary<string, dynamic> raw)
         {

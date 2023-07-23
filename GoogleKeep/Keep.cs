@@ -765,7 +765,7 @@ namespace GoogleKeep
                 node.Title = title;
             }
 
-            var sort = new Random().Next(1000000000, 9999999999);
+            var sort = new Random().Next(1000000000, int.MaxValue);
             foreach (var item in items)
             {
                 node.Add(item.Item1, item.Item2, sort);
