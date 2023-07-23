@@ -807,7 +807,7 @@ namespace GoogleKeep
             }
             else if (raw.TryGetProperty("topicCategory", out JsonElement topicCategory))
             {
-                return new Category { Category = (CategoryValue)Enum.Parse(typeof(CategoryValue), topicCategory.GetString()) };
+                return new Category { category = (CategoryValue)Enum.Parse(typeof(CategoryValue), topicCategory.GetString()) };
             }
             else if (raw.TryGetProperty("taskAssist", out JsonElement taskAssist))
             {
@@ -879,7 +879,7 @@ namespace GoogleKeep
             get
             {
                 var node = _getCategoryNode();
-                return node?.Category;
+                return node?.category;
             }
             set
             {
@@ -899,7 +899,7 @@ namespace GoogleKeep
                         _annotations[node.Id] = node;
                     }
 
-                    node.Category = value.Value;
+                    node.category = value.Value;
                 }
                 _dirty = true;
             }
