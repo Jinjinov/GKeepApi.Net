@@ -1141,9 +1141,7 @@ namespace GoogleKeep
 
         public string Url => "https://keep.google.com/u/0/#" + _TYPE.ToString().ToLower() + "/" + this.Id;
 
-        public override bool Dirty => base.Dirty || this.labels.Dirty || this.collaborators.Dirty;
-
-        public List<Blob> Blobs => this.Children.FindAll(node => node is Blob).Cast<Blob>().ToList();
+        public List<Blob> Blobs => this.Children.OfType<Blob>().ToList();
 
         public List<NodeImage> Images => this.Blobs.FindAll(blob => blob.NodeBlob is NodeImage).Select(blob => blob.NodeBlob as NodeImage).ToList();
 

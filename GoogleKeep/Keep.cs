@@ -248,61 +248,61 @@ namespace GoogleKeep
 
             var current_time = DateTime.Now;
             var params1 = new Dictionary<string, object>
-        {
-            { "nodes", nodes },
-            { "clientTimestamp", ((long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds).ToString() },
-            { "requestHeader", new Dictionary<string, object>
-                {
-                    { "clientSessionId", _session_id },
-                    { "clientPlatform", "ANDROID" },
-                    { "clientVersion", new Dictionary<string, string>
-                        {
-                            { "major", "9" },
-                            { "minor", "9" },
-                            { "build", "9" },
-                            { "revision", "9" },
-                        }
-                    },
-                    { "capabilities", new List<Dictionary<string, string>>
-                        {
-                            new Dictionary<string, string> { { "type", "NC" } },
-                            new Dictionary<string, string> { { "type", "PI" } },
-                            new Dictionary<string, string> { { "type", "LB" } },
-                            new Dictionary<string, string> { { "type", "AN" } },
-                            new Dictionary<string, string> { { "type", "SH" } },
-                            new Dictionary<string, string> { { "type", "DR" } },
-                            new Dictionary<string, string> { { "type", "TR" } },
-                            new Dictionary<string, string> { { "type", "IN" } },
-                            new Dictionary<string, string> { { "type", "SNB" } },
-                            new Dictionary<string, string> { { "type", "MI" } },
-                            new Dictionary<string, string> { { "type", "CO" } },
+            {
+                { "nodes", nodes },
+                { "clientTimestamp", ((long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds).ToString() },
+                { "requestHeader", new Dictionary<string, object>
+                    {
+                        { "clientSessionId", _session_id },
+                        { "clientPlatform", "ANDROID" },
+                        { "clientVersion", new Dictionary<string, string>
+                            {
+                                { "major", "9" },
+                                { "minor", "9" },
+                                { "build", "9" },
+                                { "revision", "9" },
+                            }
+                        },
+                        { "capabilities", new List<Dictionary<string, string>>
+                            {
+                                new Dictionary<string, string> { { "type", "NC" } },
+                                new Dictionary<string, string> { { "type", "PI" } },
+                                new Dictionary<string, string> { { "type", "LB" } },
+                                new Dictionary<string, string> { { "type", "AN" } },
+                                new Dictionary<string, string> { { "type", "SH" } },
+                                new Dictionary<string, string> { { "type", "DR" } },
+                                new Dictionary<string, string> { { "type", "TR" } },
+                                new Dictionary<string, string> { { "type", "IN" } },
+                                new Dictionary<string, string> { { "type", "SNB" } },
+                                new Dictionary<string, string> { { "type", "MI" } },
+                                new Dictionary<string, string> { { "type", "CO" } },
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
 
             if (target_version != null)
             {
-            params1["targetVersion"] = target_version;
+                params1["targetVersion"] = target_version;
             }
 
             if (labels.Count > 0)
             {
-            params1["userInfo"] = new Dictionary<string, object>
-            {
-                { "labels", labels }
-            };
+                params1["userInfo"] = new Dictionary<string, object>
+                {
+                    { "labels", labels }
+                };
             }
 
             Console.WriteLine("Syncing " + labels.Count + " labels and " + nodes.Count + " nodes");
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "changes" },
-            { "method", "POST" },
-            { "json", params1 }
-        });
+            {
+                { "url", _base_url + "changes" },
+                { "method", "POST" },
+                { "json", params1 }
+            });
         }
     }
 
@@ -323,11 +323,11 @@ namespace GoogleKeep
             }
 
             var response = await _Send(new Dictionary<string, object>
-        {
-            { "url", url },
-            { "method", "GET" },
-            { "allow_redirects", false }
-        });
+            {
+                { "url", url },
+                { "method", "GET" },
+                { "allow_redirects", false }
+            });
 
             return response.Headers.GetValues("location").FirstOrDefault();
         }
@@ -337,29 +337,29 @@ namespace GoogleKeep
     {
         private const string API_URL = "https://www.googleapis.com/reminders/v1internal/reminders/";
         private readonly Dictionary<string, object> static_params = new Dictionary<string, object>
-    {
-        { "taskList", new List<Dictionary<string, string>>
-            {
-                new Dictionary<string, string> { { "systemListId", "MEMENTO" } }
-            }
-        },
-        { "requestParameters", new Dictionary<string, object>
-            {
-                { "userAgentStructured", new Dictionary<string, object>
-                    {
-                        { "clientApplication", "KEEP" },
-                        { "clientApplicationVersion", new Dictionary<string, string>
-                            {
-                                { "major", "9" },
-                                { "minor", "9.9.9.9" }
-                            }
-                        },
-                        { "clientPlatform", "ANDROID" }
+        {
+            { "taskList", new List<Dictionary<string, string>>
+                {
+                    new Dictionary<string, string> { { "systemListId", "MEMENTO" } }
+                }
+            },
+            { "requestParameters", new Dictionary<string, object>
+                {
+                    { "userAgentStructured", new Dictionary<string, object>
+                        {
+                            { "clientApplication", "KEEP" },
+                            { "clientApplicationVersion", new Dictionary<string, string>
+                                {
+                                    { "major", "9" },
+                                    { "minor", "9.9.9.9" }
+                                }
+                            },
+                            { "clientPlatform", "ANDROID" }
+                        }
                     }
                 }
             }
-        }
-    };
+        };
 
         public RemindersAPI(APIAuth auth = null) : base(API_URL, auth)
         {
@@ -369,132 +369,132 @@ namespace GoogleKeep
         {
             var parameters = new Dictionary<string, object>();
             parameters["task"] = new Dictionary<string, object>
-        {
-            { "dueDate", new Dictionary<string, object>
-                {
-                    { "year", dtime.Year },
-                    { "month", dtime.Month },
-                    { "day", dtime.Day },
-                    { "time", new Dictionary<string, int>
-                        {
-                            { "hour", dtime.Hour },
-                            { "minute", dtime.Minute },
-                            { "second", dtime.Second }
+            {
+                { "dueDate", new Dictionary<string, object>
+                    {
+                        { "year", dtime.Year },
+                        { "month", dtime.Month },
+                        { "day", dtime.Day },
+                        { "time", new Dictionary<string, int>
+                            {
+                                { "hour", dtime.Hour },
+                                { "minute", dtime.Minute },
+                                { "second", dtime.Second }
+                            }
+                        }
+                    }
+                },
+                { "snoozed", true },
+                { "extensions", new Dictionary<string, object>
+                    {
+                        { "keepExtension", new Dictionary<string, string>
+                            {
+                                { "reminderVersion", "V2" },
+                                { "clientNoteId", node_id },
+                                { "serverNoteId", node_server_id }
+                            }
                         }
                     }
                 }
-            },
-            { "snoozed", true },
-            { "extensions", new Dictionary<string, object>
-                {
-                    { "keepExtension", new Dictionary<string, string>
-                        {
-                            { "reminderVersion", "V2" },
-                            { "clientNoteId", node_id },
-                            { "serverNoteId", node_server_id }
-                        }
-                    }
-                }
-            }
-        };
+            };
             parameters["taskId"] = new Dictionary<string, object>
-        {
-            { "clientAssignedId", "KEEP/v2/" + node_server_id }
-        };
+            {
+                { "clientAssignedId", "KEEP/v2/" + node_server_id }
+            };
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "create" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "create" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
 
         public async Task<Dictionary<string, object>> Update(string node_id, string node_server_id, DateTime dtime)
         {
             var parameters = new Dictionary<string, object>();
             parameters["newTask"] = new Dictionary<string, object>
-        {
-            { "dueDate", new Dictionary<string, object>
-                {
-                    { "year", dtime.Year },
-                    { "month", dtime.Month },
-                    { "day", dtime.Day },
-                    { "time", new Dictionary<string, int>
-                        {
-                            { "hour", dtime.Hour },
-                            { "minute", dtime.Minute },
-                            { "second", dtime.Second }
+            {
+                { "dueDate", new Dictionary<string, object>
+                    {
+                        { "year", dtime.Year },
+                        { "month", dtime.Month },
+                        { "day", dtime.Day },
+                        { "time", new Dictionary<string, int>
+                            {
+                                { "hour", dtime.Hour },
+                                { "minute", dtime.Minute },
+                                { "second", dtime.Second }
+                            }
+                        }
+                    }
+                },
+                { "snoozed", true },
+                { "extensions", new Dictionary<string, object>
+                    {
+                        { "keepExtension", new Dictionary<string, string>
+                            {
+                                { "reminderVersion", "V2" },
+                                { "clientNoteId", node_id },
+                                { "serverNoteId", node_server_id }
+                            }
                         }
                     }
                 }
-            },
-            { "snoozed", true },
-            { "extensions", new Dictionary<string, object>
-                {
-                    { "keepExtension", new Dictionary<string, string>
-                        {
-                            { "reminderVersion", "V2" },
-                            { "clientNoteId", node_id },
-                            { "serverNoteId", node_server_id }
-                        }
-                    }
-                }
-            }
-        };
+            };
             parameters["taskId"] = new Dictionary<string, object>
-        {
-            { "clientAssignedId", "KEEP/v2/" + node_server_id }
-        };
+            {
+                { "clientAssignedId", "KEEP/v2/" + node_server_id }
+            };
             parameters["updateMask"] = new Dictionary<string, object>
-        {
-            { "updateField", new List<string>
-                {
-                    "ARCHIVED",
-                    "DUE_DATE",
-                    "EXTENSIONS",
-                    "LOCATION",
-                    "TITLE"
+            {
+                { "updateField", new List<string>
+                    {
+                        "ARCHIVED",
+                        "DUE_DATE",
+                        "EXTENSIONS",
+                        "LOCATION",
+                        "TITLE"
+                    }
                 }
-            }
-        };
+            };
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "update" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "update" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
 
         public async Task<Dictionary<string, object>> Delete(string node_server_id)
         {
             var parameters = new Dictionary<string, object>
-        {
-            { "batchedRequest", new List<Dictionary<string, object>>
-                {
-                    new Dictionary<string, object>
+            {
+                { "batchedRequest", new List<Dictionary<string, object>>
                     {
-                        { "deleteTask", new Dictionary<string, List<Dictionary<string, string>>>
-                            {
-                                { "taskId", new List<Dictionary<string, string>>
-                                    {
-                                        new Dictionary<string, string> { { "clientAssignedId", "KEEP/v2/" + node_server_id } }
+                        new Dictionary<string, object>
+                        {
+                            { "deleteTask", new Dictionary<string, List<Dictionary<string, string>>>
+                                {
+                                    { "taskId", new List<Dictionary<string, string>>
+                                        {
+                                            new Dictionary<string, string> { { "clientAssignedId", "KEEP/v2/" + node_server_id } }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-        };
+            };
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "batchmutate" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "batchmutate" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
 
         public async Task<Dictionary<string, object>> List(bool master = true)
@@ -504,9 +504,9 @@ namespace GoogleKeep
             if (master)
             {
                 parameters["recurrenceOptions"] = new Dictionary<string, object>
-            {
-                { "collapseMode", "MASTER_ONLY" }
-            };
+                {
+                    { "collapseMode", "MASTER_ONLY" }
+                };
                 parameters["includeArchived"] = true;
                 parameters["includeDeleted"] = false;
             }
@@ -517,10 +517,10 @@ namespace GoogleKeep
                 var end_time = (long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds + (24L * 60L * 60L) * 1000L;
 
                 parameters["recurrenceOptions"] = new Dictionary<string, object>
-            {
-                { "collapseMode", "INSTANCES_ONLY" },
-                { "recurrencesOnly", true }
-            };
+                {
+                    { "collapseMode", "INSTANCES_ONLY" },
+                    { "recurrencesOnly", true }
+                };
                 parameters["includeArchived"] = false;
                 parameters["includeCompleted"] = false;
                 parameters["includeDeleted"] = false;
@@ -530,39 +530,39 @@ namespace GoogleKeep
             }
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "list" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "list" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
 
         public async Task<Dictionary<string, object>> History(string storage_version)
         {
             var parameters = new Dictionary<string, object>
-        {
-            { "storageVersion", storage_version },
-            { "includeSnoozePresetUpdates", true }
-        };
+            {
+                { "storageVersion", storage_version },
+                { "includeSnoozePresetUpdates", true }
+            };
             parameters = parameters.Concat(static_params).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "history" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "history" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
 
         public async Task<Dictionary<string, object>> Update()
         {
             var parameters = new Dictionary<string, object>();
             return await Send(new Dictionary<string, object>
-        {
-            { "url", _base_url + "update" },
-            { "method", "POST" },
-            { "json", parameters }
-        });
+            {
+                { "url", _base_url + "update" },
+                { "method", "POST" },
+                { "json", parameters }
+            });
         }
     }
 
@@ -733,7 +733,7 @@ namespace GoogleKeep
                     && (colors == null || colors.Contains(node.Color))
                     && (pinned == null || node.Pinned == pinned)
                     && (archived == null || node.Archived == archived)
-                    && (trashed == false || node.Trashed == trashed);
+                    && (trashed == false || node.Trashed() == trashed);
             });
         }
 
