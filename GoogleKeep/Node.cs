@@ -1206,11 +1206,11 @@ namespace GoogleKeep
 
         public override string Text => string.Join(Environment.NewLine, new List<string> { this.Title }.Concat(this.Items.Select(node => node.ToString())));
 
-        public static List<SortedListItem> SortedItems(List<SortedListItem> items)
+        public static List<ListItem> SortedItems(List<ListItem> items)
         {
-            List<SortedListItem> SortFunc(SortedListItem x) => x.Items.SelectMany(item =>
+            List<ListItem> SortFunc(ListItem x) => x.Items.SelectMany(item =>
             {
-                var res = new List<SortedListItem> { item };
+                var res = new List<ListItem> { item };
                 res.AddRange(SortFunc(item));
                 return res;
             }).ToList();
@@ -1218,13 +1218,13 @@ namespace GoogleKeep
             return SortFunc(items[0]);
         }
 
-        public List<SortedListItem> Items => SortedItems(this.GetItems());
+        public List<ListItem> Items => SortedItems(this.GetItems());
 
-        public List<SortedListItem> Checked => SortedItems(this.GetItems(checked_: true));
+        public List<ListItem> Checked => SortedItems(this.GetItems(checked_: true));
 
-        public List<SortedListItem> Unchecked => SortedItems(this.GetItems(checked_: false));
+        public List<ListItem> Unchecked => SortedItems(this.GetItems(checked_: false));
 
-        public void SortItems(Comparison<SortedListItem> comparison)
+        public void SortItems(Comparison<ListItem> comparison)
         {
             this.GetItems().Sort(comparison);
             var sortValue = new Random().Next(1000000000, int.MaxValue);
@@ -1237,107 +1237,10 @@ namespace GoogleKeep
 
         public override string ToString() => string.Join(Environment.NewLine, new List<string> { this.Title }.Concat(this.Items.Select(item => item.ToString())));
 
-        private List<SortedListItem> GetItems(bool? checked_ = null) => this.Children.Values
-            .Where(node => node is SortedListItem listItem && (!checked_.HasValue || listItem.Checked == checked_.Value))
-            .Cast<SortedListItem>()
+        private List<ListItem> GetItems(bool? checked_ = null) => this.Children.Values
+            .Where(node => node is ListItem listItem && (!checked_.HasValue || listItem.Checked == checked_.Value))
+            .Cast<ListItem>()
             .ToList();
-    }
-
-    public class SortedListItem : ListItem
-    {
-        public SortedListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(parentId, parentServerId, superListItemId, kwargs: kwargs)
-        {
-            this.Items = new List<SortedListItem>();
-        }
-
-        public List<SortedListItem> Items { get; }
-
-        public void Indent(SortedListItem node, bool dirty = true)
-        {
-            if (node.Items.Count > 0)
-            {
-                return;
-            }
-
-            this.Items.Add(node);
-            node.SuperListItemId = this.Id;
-            node.ParentItem = this;
-            if (dirty)
-            {
-                node.Touch(true);
-            }
-        }
-
-        public void Dedent(SortedListItem node, bool dirty = true)
-        {
-            if (!this.Items.Contains(node))
-            {
-                return;
-            }
-
-            this.Items.Remove(node);
-            node.SuperListItemId = "";
-            node.ParentItem = null;
-            if (dirty)
-            {
-                node.Touch(true);
-            }
-        }
-
-        public bool Indented => this.ParentItem != null;
-
-        public override bool Checked
-        {
-            get => this._Checked;
-            set
-            {
-                this._Checked = value;
-                this.Touch(true);
-            }
-        }
-
-        public class SortedListItemComparer : IComparer<SortedListItem>
-        {
-            public int Compare(SortedListItem x, SortedListItem y)
-            {
-                int CompareSubitems(SortedListItem a, SortedListItem b)
-                {
-                    var aSort = a.ParentItem == null ? a.Sort : a.ParentItem.Sort;
-                    var bSort = b.ParentItem == null ? b.Sort : b.ParentItem.Sort;
-                    if (aSort != bSort)
-                    {
-                        return aSort.CompareTo(bSort);
-                    }
-
-                    var aSubitems = a.Items.Count == 0 ? new List<SortedListItem> { a } : a.Items;
-                    var bSubitems = b.Items.Count == 0 ? new List<SortedListItem> { b } : b.Items;
-                    var cmp = new SortedListItemComparer();
-                    for (var i = 0; i < Math.Max(aSubitems.Count, bSubitems.Count); i++)
-                    {
-                        if (i >= aSubitems.Count)
-                        {
-                            return -1;
-                        }
-
-                        if (i >= bSubitems.Count)
-                        {
-                            return 1;
-                        }
-
-                        var res = cmp.Compare(aSubitems[i], bSubitems[i]);
-                        if (res != 0)
-                        {
-                            return res;
-                        }
-                    }
-
-                    return 0;
-                }
-
-                return CompareSubitems(x, y);
-            }
-        }
     }
 
     public class ListItem : Node
@@ -1351,6 +1254,7 @@ namespace GoogleKeep
             this.PrevSuperListItemId = null;
             this._Subitems = new Dictionary<string, ListItem>();
             this._Checked = false;
+            this.Items = new List<ListItem>();
         }
 
         public ListItem ParentItem { get; set; }
@@ -1409,9 +1313,9 @@ namespace GoogleKeep
 
         public List<ListItem> Subitems => this.GetSortedSubitems().ToList();
 
-        public IEnumerable<SortedListItem> GetSortedSubitems(bool? check = null)
+        public IEnumerable<ListItem> GetSortedSubitems(bool? check = null)
         {
-            foreach (var subitem in this.Children.OfType<SortedListItem>())
+            foreach (var subitem in this.Children.OfType<ListItem>())
             {
                 if (check.HasValue && subitem.Checked != check.Value)
                 {
@@ -1427,7 +1331,7 @@ namespace GoogleKeep
             }
         }
 
-        public virtual bool Checked
+        public bool Checked
         {
             get => this._Checked;
             set
@@ -1439,10 +1343,88 @@ namespace GoogleKeep
 
         public void SortItems(Func<ListItem, ListItem, int> comparison)
         {
-            this.GetSortedSubitems().ToList().Sort(new SortedListItem.SortedListItemComparer());
+            this.GetSortedSubitems().ToList().Sort(new ListItemComparer());
         }
 
         public override string ToString() => $"{(this.Indented ? "  " : "")}{(this.Checked ? "☑" : "☐")} {this.Text}";
+
+        public List<ListItem> Items { get; }
+
+        public void Indent(ListItem node, bool dirty = true)
+        {
+            if (node.Items.Count > 0)
+            {
+                return;
+            }
+
+            this.Items.Add(node);
+            node.SuperListItemId = this.Id;
+            node.ParentItem = this;
+            if (dirty)
+            {
+                node.Touch(true);
+            }
+        }
+
+        public void Dedent(ListItem node, bool dirty = true)
+        {
+            if (!this.Items.Contains(node))
+            {
+                return;
+            }
+
+            this.Items.Remove(node);
+            node.SuperListItemId = "";
+            node.ParentItem = null;
+            if (dirty)
+            {
+                node.Touch(true);
+            }
+        }
+
+        public bool Indented => this.ParentItem != null;
+
+        public class ListItemComparer : IComparer<ListItem>
+        {
+            public int Compare(ListItem x, ListItem y)
+            {
+                int CompareSubitems(ListItem a, ListItem b)
+                {
+                    var aSort = a.ParentItem == null ? a.Sort : a.ParentItem.Sort;
+                    var bSort = b.ParentItem == null ? b.Sort : b.ParentItem.Sort;
+                    if (aSort != bSort)
+                    {
+                        return aSort.CompareTo(bSort);
+                    }
+
+                    var aSubitems = a.Items.Count == 0 ? new List<ListItem> { a } : a.Items;
+                    var bSubitems = b.Items.Count == 0 ? new List<ListItem> { b } : b.Items;
+                    var cmp = new ListItemComparer();
+                    for (var i = 0; i < Math.Max(aSubitems.Count, bSubitems.Count); i++)
+                    {
+                        if (i >= aSubitems.Count)
+                        {
+                            return -1;
+                        }
+
+                        if (i >= bSubitems.Count)
+                        {
+                            return 1;
+                        }
+
+                        var res = cmp.Compare(aSubitems[i], bSubitems[i]);
+                        if (res != 0)
+                        {
+                            return res;
+                        }
+                    }
+
+                    return 0;
+                }
+
+                return CompareSubitems(x, y);
+            }
+        }
     }
 
     public class NodeBlob : Element
