@@ -1516,602 +1516,214 @@ namespace GoogleKeep
 
     public class NodeBlob : Element
     {
-        public NodeBlob(BlobType? type = null)
-        {
-            this.BlobId = null;
-            this.Type = type;
-            this._MediaId = null;
-            this._Mimetype = "";
-            this._IsUploaded = false;
-        }
+        public BlobType Type { get; set; }
 
         public string BlobId { get; set; }
-        public BlobType? Type { get; set; }
-        private string _MediaId { get; set; }
-        private string _Mimetype { get; set; }
-        private bool _IsUploaded { get; set; }
 
-        public static NodeBlob FromJson(Dictionary<string, dynamic> raw)
+        private string _mediaId;
+
+        public string MediaId
         {
-            if (raw == null)
-            {
-                return null;
-            }
-
-            if (!raw.ContainsKey("type"))
-            {
-                return null;
-            }
-
-            BlobType _type;
-            try
-            {
-                _type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"].ToString());
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"Unknown blob type: {raw["type"]}");
-                return null;
-            }
-
-            var blob = CreateBlob(_type);
-            blob.Load(raw);
-            return blob;
+            get { return _mediaId; }
+            set { _mediaId = value; }
         }
 
-        public static NodeBlob CreateBlob(BlobType type)
+        private string _mimeType;
+
+        public string MimeType
         {
-            switch (type)
-            {
-                case BlobType.Audio:
-                    return new NodeAudio();
-                case BlobType.Image:
-                    return new NodeImage();
-                case BlobType.Drawing:
-                    return new NodeDrawing();
-                default:
-                    return null;
-            }
+            get { return _mimeType; }
+            set { _mimeType = value; }
         }
 
-        public void Load(Dictionary<string, dynamic> raw)
+        public NodeBlob(BlobType type = BlobType.Audio)
+        {
+            Type = type;
+        }
+
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
-            BlobType type;
-            if (Enum.TryParse(raw.GetValueOrDefault("type"), out type))
+            // Verify this is a valid type
+            if (raw.ContainsKey("type"))
             {
-                this.Type = type;
+                try
+                {
+                    Type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"]);
+                }
+                catch (ArgumentException)
+                {
+                    // Handle invalid BlobType
+                    throw new ArgumentException("Invalid BlobType");
+                }
             }
-
-            this.BlobId = raw.GetValueOrDefault("blob_id");
-            this._MediaId = raw.GetValueOrDefault("media_id");
-            this._Mimetype = raw.GetValueOrDefault("mimetype");
+            BlobId = raw.ContainsKey("blob_id") ? raw["blob_id"] : null;
+            MediaId = raw.ContainsKey("media_id") ? raw["media_id"] : null;
+            MimeType = raw.ContainsKey("mimetype") ? raw["mimetype"] : null;
         }
 
-        public Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             var ret = base.Save(clean);
-            if (this.BlobId != null)
+            ret["kind"] = "notes#blob";
+            ret["type"] = Type.ToString().ToLower();
+            if (!string.IsNullOrEmpty(BlobId))
             {
-                ret["blob_id"] = this.BlobId;
+                ret["blob_id"] = BlobId;
             }
-
-            if (this._MediaId != null)
+            if (!string.IsNullOrEmpty(MediaId))
             {
-                ret["media_id"] = this._MediaId;
+                ret["media_id"] = MediaId;
             }
-
-            ret["type"] = this.Type.ToString();
-            ret["mimetype"] = this._Mimetype;
+            ret["mimetype"] = MimeType;
             return ret;
         }
     }
 
     public class NodeAudio : NodeBlob
     {
+        private int _length;
+
+        public int Length
+        {
+            get { return _length; }
+            set { _length = value; }
+        }
+
         public NodeAudio()
+            : base(BlobType.Audio)
         {
-            this.Type = BlobType.Audio;
-            this._Length = null;
         }
 
-        public int? Length
+        public override void Load(Dictionary<string, dynamic> raw)
         {
-            get => this._Length;
-            set
-            {
-                this._Length = value;
-                this.Touch(true);
-            }
+            base.Load(raw);
+            Length = raw.ContainsKey("length") ? raw["length"] : 0;
         }
 
-        public new static NodeAudio FromJson(Dictionary<string, dynamic> raw)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
-            if (raw == null)
+            var ret = base.Save(clean);
+            if (Length > 0)
             {
-                return null;
+                ret["length"] = Length;
             }
-
-            if (!raw.ContainsKey("type"))
-            {
-                return null;
-            }
-
-            BlobType _type;
-            try
-            {
-                _type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"].ToString());
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"Unknown blob type: {raw["type"]}");
-                return null;
-            }
-
-            if (_type != BlobType.Audio)
-            {
-                Console.WriteLine($"Blob is not audio, got: {_type}");
-                return null;
-            }
-
-            var blob = new NodeAudio();
-            blob.Load(raw);
-            return blob;
+            return ret;
         }
     }
 
     public class NodeImage : NodeBlob
     {
+        public bool IsUploaded { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int ByteSize { get; set; }
+        public string ExtractedText { get; set; }
+        public string ExtractionStatus { get; set; }
+
         public NodeImage()
+            : base(BlobType.Image)
         {
-            this.Type = BlobType.Image;
-            this._IsUploaded = false;
-            this._Width = 0;
-            this._Height = 0;
-            this._ByteSize = 0;
-            this._ExtractedText = "";
-            this._ExtractionStatus = "";
+            IsUploaded = false;
         }
 
-        public bool IsUploaded
+        public override void Load(Dictionary<string, dynamic> raw)
         {
-            get => this._IsUploaded;
-            set
-            {
-                this._IsUploaded = value;
-                this.Touch(true);
-            }
+            base.Load(raw);
+            IsUploaded = raw.ContainsKey("is_uploaded") ? raw["is_uploaded"] : false;
+            Width = raw.ContainsKey("width") ? raw["width"] : 0;
+            Height = raw.ContainsKey("height") ? raw["height"] : 0;
+            ByteSize = raw.ContainsKey("byte_size") ? raw["byte_size"] : 0;
+            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] : "";
+            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] : "";
         }
 
-        public int Width
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
-            get => this._Width;
-            set
-            {
-                this._Width = value;
-                this.Touch(true);
-            }
-        }
-
-        public int Height
-        {
-            get => this._Height;
-            set
-            {
-                this._Height = value;
-                this.Touch(true);
-            }
-        }
-
-        public int ByteSize
-        {
-            get => this._ByteSize;
-            set
-            {
-                this._ByteSize = value;
-                this.Touch(true);
-            }
-        }
-
-        public string ExtractedText
-        {
-            get => this._ExtractedText;
-            set
-            {
-                this._ExtractedText = value;
-                this.Touch(true);
-            }
-        }
-
-        public string ExtractionStatus
-        {
-            get => this._ExtractionStatus;
-            set
-            {
-                this._ExtractionStatus = value;
-                this.Touch(true);
-            }
-        }
-
-        public new static NodeImage FromJson(Dictionary<string, dynamic> raw)
-        {
-            if (raw == null)
-            {
-                return null;
-            }
-
-            if (!raw.ContainsKey("type"))
-            {
-                return null;
-            }
-
-            BlobType _type;
-            try
-            {
-                _type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"].ToString());
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"Unknown blob type: {raw["type"]}");
-                return null;
-            }
-
-            if (_type != BlobType.Image)
-            {
-                Console.WriteLine($"Blob is not image, got: {_type}");
-                return null;
-            }
-
-            var blob = new NodeImage();
-            blob.Load(raw);
-            return blob;
+            var ret = base.Save(clean);
+            ret["width"] = Width;
+            ret["height"] = Height;
+            ret["byte_size"] = ByteSize;
+            ret["extracted_text"] = ExtractedText;
+            ret["extraction_status"] = ExtractionStatus;
+            return ret;
         }
     }
 
     public class NodeDrawing : NodeBlob
     {
+        public string ExtractedText { get; set; }
+        public string ExtractionStatus { get; set; }
+        public NodeDrawingInfo DrawingInfo { get; set; }
+
         public NodeDrawing()
+            : base(BlobType.Drawing)
         {
-            this.Type = BlobType.Drawing;
-            this._ExtractedText = "";
-            this._ExtractionStatus = "";
-            this._DrawingInfo = null;
+            DrawingInfo = new NodeDrawingInfo();
         }
 
-        public string ExtractedText
+        public override void Load(Dictionary<string, dynamic> raw)
         {
-            get => this._ExtractedText;
-            set
+            base.Load(raw);
+            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] : "";
+            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] : "";
+            if (raw.ContainsKey("drawingInfo"))
             {
-                this._ExtractedText = value;
-                this.Touch(true);
-            }
-        }
-
-        public string ExtractionStatus
-        {
-            get => this._ExtractionStatus;
-            set
-            {
-                this._ExtractionStatus = value;
-                this.Touch(true);
+                DrawingInfo.Load(raw["drawingInfo"]);
             }
         }
 
-        public DrawingInfo DrawingInfo
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
-            get => this._DrawingInfo;
-            set
+            var ret = base.Save(clean);
+            ret["extracted_text"] = ExtractedText;
+            ret["extraction_status"] = ExtractionStatus;
+            if (DrawingInfo != null)
             {
-                this._DrawingInfo = value;
-                this.Touch(true);
+                ret["drawingInfo"] = DrawingInfo.Save(clean);
             }
-        }
-
-        public new static NodeDrawing FromJson(Dictionary<string, dynamic> raw)
-        {
-            if (raw == null)
-            {
-                return null;
-            }
-
-            if (!raw.ContainsKey("type"))
-            {
-                return null;
-            }
-
-            BlobType _type;
-            try
-            {
-                _type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"].ToString());
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine($"Unknown blob type: {raw["type"]}");
-                return null;
-            }
-
-            if (_type != BlobType.Drawing)
-            {
-                Console.WriteLine($"Blob is not drawing, got: {_type}");
-                return null;
-            }
-
-            var blob = new NodeDrawing();
-            blob.Load(raw);
-            return blob;
-        }
-    }
-
-    public class DrawingInfo
-    {
-        public DrawingInfo(int width, int height, string ink, int backgroundColor, double zoomValue, double offsetX, double offsetY, double lineThickness)
-        {
-            this.Width = width;
-            this.Height = height;
-            this.Ink = ink;
-            this.BackgroundColor = backgroundColor;
-            this.ZoomValue = zoomValue;
-            this.OffsetX = offsetX;
-            this.OffsetY = offsetY;
-            this.LineThickness = lineThickness;
-        }
-
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public string Ink { get; set; }
-        public int BackgroundColor { get; set; }
-        public double ZoomValue { get; set; }
-        public double OffsetX { get; set; }
-        public double OffsetY { get; set; }
-        public double LineThickness { get; set; }
-
-        public void Load(Dictionary<string, dynamic> raw)
-        {
-            this.Width = raw.GetValueOrDefault("drawingWidth", 0);
-            this.Height = raw.GetValueOrDefault("drawingHeight", 0);
-            this.Ink = raw.GetValueOrDefault("ink", "");
-            this.BackgroundColor = raw.GetValueOrDefault("backgroundColor", 0);
-            this.ZoomValue = raw.GetValueOrDefault("zoomValue", 1.0);
-            this.OffsetX = raw.GetValueOrDefault("offsetX", 0.0);
-            this.OffsetY = raw.GetValueOrDefault("offsetY", 0.0);
-            this.LineThickness = raw.GetValueOrDefault("lineThickness", 0.0);
-        }
-
-        public Dictionary<string, dynamic> Save(bool clean = true)
-        {
-            var ret = new Dictionary<string, dynamic>
-        {
-            { "drawingWidth", this.Width },
-            { "drawingHeight", this.Height },
-            { "ink", this.Ink },
-            { "backgroundColor", this.BackgroundColor },
-            { "zoomValue", this.ZoomValue },
-            { "offsetX", this.OffsetX },
-            { "offsetY", this.OffsetY },
-            { "lineThickness", this.LineThickness }
-        };
             return ret;
         }
     }
 
-    public class NodeCollaborators : Element
+    public class NodeDrawingInfo : Element
     {
-        public NodeCollaborators()
+        public string DrawingId { get; set; }
+        public NodeImage Snapshot { get; set; }
+        private string _snapshotFingerprint;
+        public DateTime ThumbnailGeneratedTime { get; set; }
+        private string _inkHash;
+        private string _snapshotProtoFprint;
+
+        public NodeDrawingInfo()
         {
-            this._Collaborators = new List<string>();
-            this._Requests = new List<string>();
+            Snapshot = new NodeImage();
+            ThumbnailGeneratedTime = new DateTime(0);
         }
 
-        public List<string> Collaborators => this._Collaborators.ToList();
-        public List<string> Requests => this._Requests.ToList();
-        private List<string> _Collaborators { get; set; }
-        private List<string> _Requests { get; set; }
-
-        public void Load(List<string> collaborators, List<string> requests)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
-            this._Collaborators = collaborators ?? new List<string>();
-            this._Requests = requests ?? new List<string>();
+            base.Load(raw);
+            DrawingId = raw["drawingId"];
+            Snapshot.Load(raw["snapshotData"]);
+            _snapshotFingerprint = raw.ContainsKey("snapshotFingerprint") ? raw["snapshotFingerprint"] : _snapshotFingerprint;
+            ThumbnailGeneratedTime = raw.ContainsKey("thumbnailGeneratedTime")
+                ? DateTime.Parse(raw["thumbnailGeneratedTime"])
+                : new DateTime(0);
+            _inkHash = raw.ContainsKey("inkHash") ? raw["inkHash"] : "";
+            _snapshotProtoFprint = raw.ContainsKey("snapshotProtoFprint") ? raw["snapshotProtoFprint"] : _snapshotProtoFprint;
         }
 
-        public Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
-            var ret = new Dictionary<string, dynamic>();
-            if (this._Collaborators.Count > 0)
-            {
-                ret["roleInfo"] = this._Collaborators;
-            }
-
-            if (this._Requests.Count > 0)
-            {
-                ret["shareRequests"] = this._Requests;
-            }
-
+            var ret = base.Save(clean);
+            ret["drawingId"] = DrawingId;
+            ret["snapshotData"] = Snapshot.Save(clean);
+            ret["snapshotFingerprint"] = _snapshotFingerprint;
+            ret["thumbnailGeneratedTime"] = ThumbnailGeneratedTime.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            ret["inkHash"] = _inkHash;
+            ret["snapshotProtoFprint"] = _snapshotProtoFprint;
             return ret;
-        }
-
-        public bool Dirty => this._Collaborators.Count > 0 || this._Requests.Count > 0;
-    }
-
-    public class NodeLabels : Element
-    {
-        public NodeLabels()
-        {
-            this._LabelIds = new List<string>();
-        }
-
-        public List<string> LabelIds => this._LabelIds.ToList();
-        private List<string> _LabelIds { get; set; }
-
-        public void Load(List<string> labelIds)
-        {
-            this._LabelIds = labelIds ?? new List<string>();
-        }
-
-        public Dictionary<string, dynamic> Save(bool clean = true)
-        {
-            var ret = new Dictionary<string, dynamic>();
-            if (this._LabelIds.Count > 0)
-            {
-                ret["labelIds"] = this._LabelIds;
-            }
-
-            return ret;
-        }
-
-        public bool Dirty => this._LabelIds.Count > 0;
-    }
-
-    public class Node : Element
-    {
-        public Node(string parentId = null, string id_ = null, NodeType type_ = NodeType.Unknown, DateTime created = default, DateTime modified = default)
-        {
-            this.Id = id_ ?? Guid.NewGuid().ToString();
-            this.ParentId = parentId;
-            this.ServerId = "";
-            this.Type = type_;
-            this.Created = created == default ? DateTime.UtcNow : created;
-            this.Modified = modified == default ? DateTime.UtcNow : modified;
-            this._HasMutation = false;
-            this._Moved = false;
-            this._DocumentVersion = null;
-            this._DocumentVersionCreatedBy = "";
-        }
-
-        public string Id { get; }
-        public string ParentId { get; }
-        public string ServerId { get; set; }
-        public NodeType Type { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime Modified { get; set; }
-        private bool _HasMutation { get; set; }
-        private bool _Moved { get; set; }
-        private int? _DocumentVersion { get; set; }
-        private string _DocumentVersionCreatedBy { get; set; }
-
-        public void Load(Dictionary<string, dynamic> raw)
-        {
-            if (raw.ContainsKey("id"))
-            {
-                this.ServerId = raw["id"];
-            }
-
-            this.Created = raw.ContainsKey("created") ? raw["created"] : DateTime.UtcNow;
-            this.Modified = raw.ContainsKey("modified") ? raw["modified"] : DateTime.UtcNow;
-            this._HasMutation = raw.ContainsKey("hasMutation") && raw["hasMutation"];
-            this._Moved = raw.ContainsKey("moved") && raw["moved"];
-            this._DocumentVersion = raw.ContainsKey("documentVersion") ? raw["documentVersion"] : null;
-            this._DocumentVersionCreatedBy = raw.ContainsKey("documentVersionCreatedBy") ? raw["documentVersionCreatedBy"] : "";
-        }
-
-        public Dictionary<string, dynamic> Save(bool clean = true)
-        {
-            var ret = new Dictionary<string, dynamic>
-        {
-            { "id", this.ServerId },
-            { "created", this.Created },
-            { "modified", this.Modified }
-        };
-            if (this._HasMutation)
-            {
-                ret["hasMutation"] = this._HasMutation;
-            }
-
-            if (this._Moved)
-            {
-                ret["moved"] = this._Moved;
-            }
-
-            if (this._DocumentVersion != null)
-            {
-                ret["documentVersion"] = this._DocumentVersion;
-            }
-
-            if (!string.IsNullOrEmpty(this._DocumentVersionCreatedBy))
-            {
-                ret["documentVersionCreatedBy"] = this._DocumentVersionCreatedBy;
-            }
-
-            return ret;
-        }
-    }
-
-    public class Element
-    {
-        public Element()
-        {
-            this._Text = "";
-            this._Title = "";
-            this._Color = ColorValue.Default;
-        }
-
-        public string Text
-        {
-            get => this._Text;
-            set
-            {
-                this._Text = value;
-                this.Touch(true);
-            }
-        }
-
-        public string Title
-        {
-            get => this._Title;
-            set
-            {
-                this._Title = value;
-                this.Touch(true);
-            }
-        }
-
-        public ColorValue Color
-        {
-            get => this._Color;
-            set
-            {
-                this._Color = value;
-                this.Touch(true);
-            }
-        }
-
-        public bool Touched => this._Touched;
-        private bool _Touched { get; set; }
-
-        public void Touch(bool dirty = true)
-        {
-            this._Touched = true;
-        }
-
-        public void Clean()
-        {
-            this._Touched = false;
-        }
-
-        public bool Dirty => this._Touched;
-
-        private string _Text { get; set; }
-        private string _Title { get; set; }
-        private ColorValue _Color { get; set; }
-
-        public virtual Dictionary<string, dynamic> Save(bool clean = true)
-        {
-            var ret = new Dictionary<string, dynamic>
-        {
-            { "text", this._Text },
-            { "title", this._Title },
-            { "color", this._Color }
-        };
-            this.Clean();
-            return ret;
-        }
-
-        public virtual void Load(Dictionary<string, dynamic> raw)
-        {
-            this._Text = raw.GetValueOrDefault("text", "");
-            this._Title = raw.GetValueOrDefault("title", "");
-            this._Color = raw.GetValueOrDefault("color", ColorValue.Default);
-            this.Clean();
         }
     }
 
@@ -2121,13 +1733,13 @@ namespace GoogleKeep
     {
         { BlobType.Audio, typeof(NodeAudio) },
         { BlobType.Image, typeof(NodeImage) },
-        { BlobType.Drawing, typeof(NodeDrawing) },
+        { BlobType.Drawing, typeof(NodeDrawing) }
     };
 
         public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
             : base(NodeType.Blob, parentId, kwargs)
         {
-            this.Blob = null;
+            Blob = null;
         }
 
         public NodeBlob Blob { get; private set; }
@@ -2139,37 +1751,36 @@ namespace GoogleKeep
                 return null;
             }
 
-            var type = raw.ContainsKey("type") ? raw["type"] : null;
-            if (type == null)
+            if (!raw.ContainsKey("type"))
             {
                 return null;
             }
 
-            if (!_blobTypeMap.TryGetValue((BlobType)Enum.Parse(typeof(BlobType), type), out var bcls))
+            if (!_blobTypeMap.TryGetValue(Enum.TryParse(raw["type"], out BlobType type) ? type : BlobType.Unknown, out var bcls))
             {
                 // Handle unknown blob types
                 // logger.Warning("Unknown blob type: " + type);
                 return null;
             }
 
-            NodeBlob blob = Activator.CreateInstance(bcls) as NodeBlob;
+            var blob = Activator.CreateInstance(bcls) as NodeBlob;
             blob?.Load(raw);
 
             return blob;
         }
 
-        protected override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, dynamic> raw)
         {
             base.Load(raw);
-            this.Blob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
+            Blob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
         }
 
-        public new Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, dynamic> Save(bool clean = true)
         {
             var ret = base.Save(clean);
-            if (this.Blob != null)
+            if (Blob != null)
             {
-                ret["blob"] = this.Blob.Save(clean);
+                ret["blob"] = Blob.Save(clean);
             }
             return ret;
         }

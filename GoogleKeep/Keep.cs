@@ -319,7 +319,7 @@ namespace GoogleKeep
             var url = _base_url + blob.Parent.ServerId + "/" + blob.ServerId;
             if (blob.Blob.Type == GoogleKeep.BlobType.Drawing)
             {
-                url += "/" + (blob.Blob as NodeDrawing).DrawingInfo.drawingid;
+                url += "/" + (blob.Blob as NodeDrawing).DrawingInfo.DrawingId;
             }
 
             var response = await _Send(new Dictionary<string, object>
