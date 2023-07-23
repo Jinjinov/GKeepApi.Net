@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -18,11 +19,6 @@ using System.Xml.Linq;
 /// </summary>
 namespace GoogleKeep
 {
-    public class Keep : IKeep
-    {
-
-    }
-
     public class APIAuth
     {
         public string Email { get; set; }
@@ -570,4 +566,518 @@ namespace GoogleKeep
         }
     }
 
+    public class Keep
+    {
+        // OAuth scopes
+        private const string OAUTH_SCOPES = "oauth2:https://www.googleapis.com/auth/memento https://www.googleapis.com/auth/reminders";
+
+        private KeepAPI _keep_api;
+        private RemindersAPI _reminders_api;
+        private MediaAPI _media_api;
+        private string _keep_version;
+        private string _reminder_version;
+        private Dictionary<string, _node.Label> _labels;
+        private Dictionary<string, _node.TopLevelNode> _nodes;
+        private Dictionary<string, string> _sid_map;
+
+        public Keep()
+        {
+            _keep_api = new KeepAPI();
+            _reminders_api = new RemindersAPI();
+            _media_api = new MediaAPI();
+            _keep_version = null;
+            _reminder_version = null;
+            _labels = new Dictionary<string, _node.Label>();
+            _nodes = new Dictionary<string, _node.TopLevelNode>();
+            _sid_map = new Dictionary<string, string>();
+
+            Clear();
+        }
+
+        private void Clear()
+        {
+            _keep_version = null;
+            _reminder_version = null;
+            _labels.Clear();
+            _nodes.Clear();
+            _sid_map.Clear();
+
+            var root_node = new _node.Root();
+            _nodes[_node.Root.ID] = root_node;
+        }
+
+        public bool Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        {
+            var auth = new APIAuth(OAUTH_SCOPES);
+            if (device_id == null)
+            {
+                device_id = GetMac();
+            }
+
+            var ret = auth.Login(email, password, device_id);
+            if (ret)
+            {
+                Load(auth, state, sync);
+            }
+
+            return ret;
+        }
+
+        public bool Resume(string email, string master_token, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        {
+            var auth = new APIAuth(OAUTH_SCOPES);
+            if (device_id == null)
+            {
+                device_id = GetMac();
+            }
+
+            var ret = auth.Load(email, master_token, device_id);
+            if (ret)
+            {
+                Load(auth, state, sync);
+            }
+
+            return ret;
+        }
+
+        public string GetMasterToken()
+        {
+            return _keep_api.GetAuth().GetMasterToken();
+        }
+
+        private void Load(APIAuth auth, Dictionary<string, object> state = null, bool sync = true)
+        {
+            _keep_api.SetAuth(auth);
+            _reminders_api.SetAuth(auth);
+            _media_api.SetAuth(auth);
+            if (state != null)
+            {
+                Restore(state);
+            }
+            if (sync)
+            {
+                Sync(true);
+            }
+        }
+
+        public Dictionary<string, object> Dump()
+        {
+            var nodes = new List<_node.TopLevelNode>();
+            foreach (var node in All())
+            {
+                nodes.Add(node);
+                nodes.AddRange(node.Children);
+            }
+
+            var serialized_labels = new List<Dictionary<string, object>>();
+            foreach (var label in Labels())
+            {
+                serialized_labels.Add(label.Save(false));
+            }
+
+            var serialized_nodes = new List<Dictionary<string, object>>();
+            foreach (var node in nodes)
+            {
+                serialized_nodes.Add(node.Save(false));
+            }
+
+            return new Dictionary<string, object>
+            {
+                { "keep_version", _keep_version },
+                { "labels", serialized_labels },
+                { "nodes", serialized_nodes }
+            };
+        }
+
+        private void Restore(Dictionary<string, object> state)
+        {
+            Clear();
+            ParseUserInfo(new Dictionary<string, object> { { "labels", state["labels"] } });
+            ParseNodes((List<Dictionary<string, object>>)state["nodes"]);
+            _keep_version = state["keep_version"].ToString();
+        }
+
+        public _node.TopLevelNode Get(string node_id)
+        {
+            return _nodes[_node.Root.ID].Get(node_id) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(node_id));
+        }
+
+        public void Add(_node.Node node)
+        {
+            if (node.ParentId != _node.Root.ID)
+            {
+                throw new Exception("Not a top level node");
+            }
+
+            _nodes[node.Id] = (_node.TopLevelNode)node;
+            _nodes[node.ParentId].Append(node, false);
+        }
+
+        public IEnumerable<_node.TopLevelNode> Find(
+            string query = null,
+            Func<_node.TopLevelNode, bool> func = null,
+            List<_node.Label> labels = null,
+            List<string> colors = null,
+            bool? pinned = null,
+            bool? archived = null,
+            bool trashed = false)
+        {
+            labels = labels?.Select(l => l.Id).ToList();
+            return All().Where(node =>
+            {
+                return (query == null ||
+                    (query is string && (node.Title.Contains(query) || node.Text.Contains(query))) ||
+                    (query is Regex regex && (regex.IsMatch(node.Title) || regex.IsMatch(node.Text))))
+                    && (func == null || func(node))
+                    && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => node.Labels.ContainsKey(l)))
+                    && (colors == null || colors.Contains(node.Color))
+                    && (pinned == null || node.Pinned == pinned)
+                    && (archived == null || node.Archived == archived)
+                    && (trashed == false || node.Trashed == trashed);
+            });
+        }
+
+        public _node.Note CreateNote(string title = null, string text = null)
+        {
+            var node = new _node.Note();
+            if (title != null)
+            {
+                node.Title = title;
+            }
+            if (text != null)
+            {
+                node.Text = text;
+            }
+            Add(node);
+            return node;
+        }
+
+        public _node.List CreateList(string title = null, List<(string, bool)> items = null)
+        {
+            if (items == null)
+            {
+                items = new List<(string, bool)>();
+            }
+
+            var node = new _node.List();
+            if (title != null)
+            {
+                node.Title = title;
+            }
+
+            var sort = new Random().Next(1000000000, 9999999999);
+            foreach (var item in items)
+            {
+                node.Add(item.Item1, item.Item2, sort);
+                sort -= _node.List.SORT_DELTA;
+            }
+            Add(node);
+            return node;
+        }
+
+        public _node.Label CreateLabel(string name)
+        {
+            if (FindLabel(name) != null)
+            {
+                throw new Exception("Label exists");
+            }
+            var node = new _node.Label();
+            node.Name = name;
+            _labels[node.Id] = node;
+            return node;
+        }
+
+        public _node.Label FindLabel(string query, bool create = false)
+        {
+            var is_str = query is string;
+            var name = is_str ? (string)query : null;
+            query = is_str ? ((string)query).ToLower() : null;
+
+            foreach (var label in _labels.Values)
+            {
+                if ((is_str && query == label.Name.ToLower()) ||
+                    (query is Regex regex && regex.IsMatch(label.Name)))
+                {
+                    return label;
+                }
+            }
+
+            return create && is_str ? CreateLabel(name) : null;
+        }
+
+        public _node.Label GetLabel(string label_id)
+        {
+            return _labels.GetValueOrDefault(label_id);
+        }
+
+        public void DeleteLabel(string label_id)
+        {
+            if (_labels.TryGetValue(label_id, out var label))
+            {
+                label.Delete();
+                foreach (var node in All())
+                {
+                    node.Labels.Remove(label);
+                }
+            }
+        }
+
+        public IEnumerable<_node.Label> Labels()
+        {
+            return _labels.Values;
+        }
+
+        public string GetMediaLink(_node.Blob blob)
+        {
+            return _media_api.Get(blob);
+        }
+
+        public IEnumerable<_node.TopLevelNode> All()
+        {
+            return _nodes[_node.Root.ID].Children;
+        }
+
+        public void Sync(bool resync = false)
+        {
+            if (resync)
+            {
+                Clear();
+            }
+
+            SyncNotes(resync);
+        }
+
+        private void SyncReminders(bool resync = false)
+        {
+            // TODO: Implementation for syncing reminders (if needed).
+        }
+
+        private void SyncNotes(bool resync = false)
+        {
+            while (true)
+            {
+                Console.WriteLine($"Starting keep sync: {_keep_version}");
+
+                bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
+                var changes = _keep_api.Changes(
+                    target_version: _keep_version,
+                    nodes: _findDirtyNodes().Select(n => n.Save()).ToList(),
+                    labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
+                );
+
+                if (changes.ContainsKey("forceFullResync"))
+                {
+                    throw new ResyncRequiredException("Full resync required");
+                }
+
+                if (changes.ContainsKey("upgradeRecommended"))
+                {
+                    throw new UpgradeRecommendedException("Upgrade recommended");
+                }
+
+                if (changes.TryGetValue("userInfo", out var userInfo))
+                {
+                    ParseUserInfo(userInfo);
+                }
+
+                if (changes.TryGetValue("nodes", out var nodes))
+                {
+                    ParseNodes(nodes);
+                }
+
+                _keep_version = changes["toVersion"].ToString();
+                Console.WriteLine($"Finishing sync: {_keep_version}");
+
+                if (!changes["truncated"].Equals(true))
+                {
+                    break;
+                }
+            }
+        }
+
+        private void ParseTasks(object raw)
+        {
+            // TODO: Implementation for parsing tasks (if needed).
+        }
+
+        private void ParseNodes(List<Dictionary<string, object>> raw)
+        {
+            var createdNodes = new List<_node.TopLevelNode>();
+            var deletedNodes = new List<_node.TopLevelNode>();
+            var listItemNodes = new List<_node.ListItem>();
+
+            foreach (var rawNode in raw)
+            {
+                if (_nodes.ContainsKey(rawNode["id"].ToString()))
+                {
+                    var node = _nodes[rawNode["id"].ToString()];
+                    if (rawNode.ContainsKey("parentId"))
+                    {
+                        node.Load(rawNode);
+                        _sid_map[node.ServerId] = node.Id;
+                        Console.WriteLine($"Updated node: {rawNode["id"]}");
+                    }
+                    else
+                    {
+                        deletedNodes.Add(node);
+                    }
+                }
+                else
+                {
+                    var node = _node.FromJson(rawNode);
+                    if (node != null)
+                    {
+                        _nodes[rawNode["id"].ToString()] = node;
+                        _sid_map[node.ServerId] = node.Id;
+                        createdNodes.Add(node);
+                        Console.WriteLine($"Created node: {rawNode["id"]}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Discarded unknown node");
+                    }
+                }
+
+                if (rawNode.TryGetValue("listItem", out var listItem))
+                {
+                    var listItemId = listItem["id"].ToString();
+                    var prevSuperListItemId = listItem["prevSuperListItemId"].ToString();
+                    var superListItemId = listItem["superListItemId"].ToString();
+
+                    var node = _nodes[prevSuperListItemId];
+                    if (prevSuperListItemId != superListItemId)
+                    {
+                        node.Dedent(listItemNodes.Last(), false);
+                    }
+
+                    if (superListItemId != null)
+                    {
+                        node = _nodes[superListItemId];
+                        node.Indent(listItemNodes.Last(), false);
+                    }
+                }
+            }
+
+            foreach (var node in listItemNodes)
+            {
+                if (node.NextListItemId != node.Id)
+                {
+                    var nextListItemNode = _nodes[node.NextListItemId];
+                    node.Indent(nextListItemNode, false);
+                }
+            }
+
+            foreach (var node in createdNodes)
+            {
+                var parent = _nodes[node.ParentId];
+                parent.Append(node, false);
+                Console.WriteLine($"Attached node: {node.Id} to {node.ParentId}");
+            }
+
+            foreach (var node in deletedNodes)
+            {
+                node.Parent.Remove(node);
+                _nodes.Remove(node.Id);
+                _sid_map.Remove(node.ServerId);
+                Console.WriteLine($"Deleted node: {node.Id}");
+            }
+
+            foreach (var node in All())
+            {
+                foreach (var labelId in node.Labels.Keys)
+                {
+                    node.Labels[labelId] = _labels.GetValueOrDefault(labelId);
+                }
+            }
+        }
+
+        private void ParseUserInfo(Dictionary<string, object> raw)
+        {
+            var labels = raw["labels"] as List<Dictionary<string, object>>;
+            if (labels != null)
+            {
+                foreach (var label in labels)
+                {
+                    var labelId = label["mainId"].ToString();
+                    if (_labels.TryGetValue(labelId, out var node))
+                    {
+                        _labels.Remove(labelId);
+                        Console.WriteLine($"Updated label: {labelId}");
+                    }
+                    else
+                    {
+                        node = new _node.Label();
+                        Console.WriteLine($"Created label: {labelId}");
+                    }
+
+                    node.Load(label);
+                    _labels[labelId] = node;
+                }
+            }
+
+            foreach (var labelId in _labels.Keys.ToList())
+            {
+                if (!labels.Any(label => label["mainId"].ToString() == labelId))
+                {
+                    _labels.Remove(labelId);
+                    Console.WriteLine($"Deleted label: {labelId}");
+                }
+            }
+        }
+
+        private List<_node.TopLevelNode> _findDirtyNodes()
+        {
+            var foundIds = new Dictionary<string, object>();
+            var nodes = new List<_node.TopLevelNode> { _nodes[_node.Root.ID] };
+
+            while (nodes.Count > 0)
+            {
+                var node = nodes[0];
+                nodes.RemoveAt(0);
+                foundIds[node.Id] = null;
+                nodes.AddRange(node.Children);
+            }
+
+            var dirtyNodes = new List<_node.TopLevelNode>();
+            foreach (var node in _nodes.Values)
+            {
+                if (node.Dirty)
+                {
+                    dirtyNodes.Add(node);
+                }
+            }
+
+            return dirtyNodes;
+        }
+
+        private void _clean()
+        {
+            var foundIds = new Dictionary<string, object>();
+            var nodes = new List<_node.TopLevelNode> { _nodes[_node.Root.ID] };
+
+            while (nodes.Count > 0)
+            {
+                var node = nodes[0];
+                nodes.RemoveAt(0);
+                foundIds[node.Id] = null;
+                nodes.AddRange(node.Children);
+            }
+
+            foreach (var nodeId in _nodes.Keys.ToList())
+            {
+                if (!foundIds.ContainsKey(nodeId))
+                {
+                    Console.WriteLine($"Dangling node: {nodeId}");
+                }
+            }
+
+            foreach (var nodeId in foundIds.Keys)
+            {
+                if (!_nodes.ContainsKey(nodeId))
+                {
+                    Console.WriteLine($"Unregistered node: {nodeId}");
+                }
+            }
+        }
+    }
 }
