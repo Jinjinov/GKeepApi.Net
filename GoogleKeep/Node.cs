@@ -12,14 +12,6 @@ using System.Text.Json.Serialization;
 /// </summary>
 namespace GoogleKeep
 {
-    public static class EnumEx
-    {
-        public static TEnum Parse<TEnum>(string value) where TEnum : struct
-        {
-            return (TEnum)Enum.Parse(typeof(TEnum), value);
-        }
-    }
-
     public enum NodeType
     {
         [JsonPropertyName("NOTE")]
@@ -1970,7 +1962,7 @@ namespace GoogleKeep
         public bool Dirty => this._LabelIds.Count > 0;
     }
 
-    public abstract class Node : Element
+    public class Node : Element
     {
         public Node(string parentId = null, string id_ = null, NodeType type_ = NodeType.Unknown, DateTime created = default, DateTime modified = default)
         {
@@ -2044,7 +2036,7 @@ namespace GoogleKeep
         }
     }
 
-    public abstract class Element
+    public class Element
     {
         public Element()
         {
@@ -2120,6 +2112,66 @@ namespace GoogleKeep
             this._Title = raw.GetValueOrDefault("title", "");
             this._Color = raw.GetValueOrDefault("color", ColorValue.Default);
             this.Clean();
+        }
+    }
+
+    public class Blob : Node
+    {
+        private static readonly Dictionary<BlobType, Type> _blobTypeMap = new Dictionary<BlobType, Type>
+    {
+        { BlobType.Audio, typeof(NodeAudio) },
+        { BlobType.Image, typeof(NodeImage) },
+        { BlobType.Drawing, typeof(NodeDrawing) },
+    };
+
+        public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
+            : base(NodeType.Blob, parentId, kwargs)
+        {
+            this.Blob = null;
+        }
+
+        public NodeBlob Blob { get; private set; }
+
+        public static NodeBlob FromJson(Dictionary<string, dynamic> raw)
+        {
+            if (raw == null)
+            {
+                return null;
+            }
+
+            var type = raw.ContainsKey("type") ? raw["type"] : null;
+            if (type == null)
+            {
+                return null;
+            }
+
+            if (!_blobTypeMap.TryGetValue((BlobType)Enum.Parse(typeof(BlobType), type), out var bcls))
+            {
+                // Handle unknown blob types
+                // logger.Warning("Unknown blob type: " + type);
+                return null;
+            }
+
+            NodeBlob blob = Activator.CreateInstance(bcls) as NodeBlob;
+            blob?.Load(raw);
+
+            return blob;
+        }
+
+        protected override void Load(Dictionary<string, dynamic> raw)
+        {
+            base.Load(raw);
+            this.Blob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
+        }
+
+        public new Dictionary<string, dynamic> Save(bool clean = true)
+        {
+            var ret = base.Save(clean);
+            if (this.Blob != null)
+            {
+                ret["blob"] = this.Blob.Save(clean);
+            }
+            return ret;
         }
     }
 

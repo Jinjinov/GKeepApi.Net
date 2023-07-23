@@ -180,7 +180,7 @@ namespace GoogleKeep
             }
         }
 
-        private async Task<HttpResponseMessage> _Send(Dictionary<string, object> req_kwargs)
+        protected async Task<HttpResponseMessage> _Send(Dictionary<string, object> req_kwargs)
         {
             var auth_token = _auth.AuthToken;
             if (auth_token == null)
@@ -316,10 +316,10 @@ namespace GoogleKeep
 
         public async Task<string> Get(Blob blob)
         {
-            var url = _base_url + blob.parent.server_id + "/" + blob.server_id;
-            if (blob.blob.type == GoogleKeep.BlobType.Drawing)
+            var url = _base_url + blob.Parent.ServerId + "/" + blob.ServerId;
+            if (blob.Blob.Type == GoogleKeep.BlobType.Drawing)
             {
-                url += "/" + blob.blob._drawing_info.drawing_id;
+                url += "/" + blob.Blob._drawing_info.drawing_id;
             }
 
             var response = await _Send(new Dictionary<string, object>
