@@ -714,7 +714,7 @@ namespace GoogleKeep
         }
 
         public IEnumerable<GoogleKeep.Node> Find(
-            string query = null,
+            object query = null,
             Func<GoogleKeep.Node, bool> func = null,
             List<GoogleKeep.Label> labels = null,
             List<string> colors = null,
@@ -726,7 +726,7 @@ namespace GoogleKeep
             return All().Where(node =>
             {
                 return (query == null ||
-                    (query is string && (node.Title.Contains(query) || node.Text.Contains(query))) ||
+                    (query is string str && (node.Title.Contains(str) || node.Text.Contains(str))) ||
                     (query is Regex regex && (regex.IsMatch(node.Title) || regex.IsMatch(node.Text))))
                     && (func == null || func(node))
                     && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => node.Labels.ContainsKey(l)))
@@ -832,9 +832,9 @@ namespace GoogleKeep
             return await _media_api.Get(blob);
         }
 
-        public IEnumerable<GoogleKeep.Node> All()
+        public IEnumerable<GoogleKeep.TopLevelNode> All()
         {
-            return _nodes[GoogleKeep.Root.ID].Children.Values;
+            return _nodes[GoogleKeep.Root.ID].Children.Values.OfType<TopLevelNode>();
         }
 
         public async Task Sync(bool resync = false)
