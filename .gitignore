@@ -3,3 +3,5 @@
 bin
 obj
 *.user
+credentials.json
+GoogleDriveClientSecrets.Hidden.cs

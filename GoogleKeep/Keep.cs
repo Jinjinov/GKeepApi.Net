@@ -28,56 +28,53 @@ namespace GoogleKeep
         UserCredential _credential;
 
         // Path to a directory where the user's credentials will be stored (can be a temporary directory)
-        readonly string _credentialPath = "path/to/credentials-directory";
+        readonly string _credentialPath = "GoogleKeep";
 
         public APIAuth(string[] scopes)
         {
             _scopes = scopes;
         }
 
-        public bool Login(string email, string password, string deviceId)
+        public async Task<bool> Login(string email, string password, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
 
-            // Your Google API client ID and client secret
-            string clientId = "YOUR_CLIENT_ID";
-            string clientSecret = "YOUR_CLIENT_SECRET";
+            GoogleDriveClientSecrets googleDriveClientSecrets = new GoogleDriveClientSecrets();
 
             // Create the credentials object
-            using (var stream = new System.IO.FileStream("path/to/client-secrets.json", System.IO.FileMode.Open, System.IO.FileAccess.Read))
-            {
-                _credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.FromStream(stream).Secrets,
-                    _scopes,
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(_credentialPath, true)).Result;
-            }
+            _credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                googleDriveClientSecrets.ClientSecrets,
+                _scopes,
+                "user",
+                CancellationToken.None,
+                new FileDataStore(_credentialPath));
 
             // Obtain an OAuth token.
-            Refresh();
+            await Refresh();
+
             return true;
         }
 
-        public bool Load(string email, string masterToken, string deviceId)
+        public async Task<bool> Load(string email, string masterToken, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
             MasterToken = masterToken;
 
             // Obtain an OAuth token.
-            Refresh();
+            await Refresh();
+
             return true;
         }
 
-        public string Refresh()
+        public async Task<string> Refresh()
         {
             // Check if the access token needs to be refreshed
             if (_credential.Token.IsExpired(SystemClock.Default))
             {
                 // Refresh the access token
-                bool success = _credential.RefreshTokenAsync(CancellationToken.None).Result;
+                bool success = await _credential.RefreshTokenAsync(CancellationToken.None);
                 if (!success)
                 {
                     Console.WriteLine("Failed to refresh access token.");
@@ -95,15 +92,15 @@ namespace GoogleKeep
             return accessToken;
         }
 
-        public void Logout()
+        public async Task Logout()
         {
             try
             {
                 // Revoke the access token to invalidate it
-                _credential.RevokeTokenAsync(CancellationToken.None).Wait();
+                await _credential.RevokeTokenAsync(CancellationToken.None);
 
                 // Clear the stored user credentials from the FileDataStore
-                new FileDataStore(_credentialPath, true).ClearAsync().Wait();
+                await new FileDataStore(_credentialPath, true).ClearAsync();
 
                 Console.WriteLine("Logout successful.");
             }
@@ -166,7 +163,9 @@ namespace GoogleKeep
                 }
 
                 Console.WriteLine("Refreshing access token");
-                _auth.Refresh();
+
+                await _auth.Refresh();
+
                 i++;
             }
         }
