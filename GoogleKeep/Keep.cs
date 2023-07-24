@@ -926,7 +926,7 @@ namespace GoogleKeep
                 }
                 else
                 {
-                    var node = GoogleKeep.FromJson(rawNode);
+                    var node = FromJson(rawNode);
                     if (node != null)
                     {
                         _nodes[rawNode["id"].ToString()] = node;
@@ -1080,6 +1080,44 @@ namespace GoogleKeep
                     Console.WriteLine($"Unregistered node: {nodeId}");
                 }
             }
+        }
+
+        private static readonly Dictionary<NodeType, Type> _type_map = new Dictionary<NodeType, Type>
+        {
+            { NodeType.Note, typeof(Note) },
+            { NodeType.List, typeof(List) },
+            { NodeType.ListItem, typeof(ListItem) },
+            { NodeType.Blob, typeof(Blob) }
+        };
+
+        public static Node FromJson(Dictionary<string, object> raw)
+        {
+            Node node = null;
+            if (raw.TryGetValue("type", out object _typeObj) && _typeObj is string _typeStr)
+            {
+                if (NodeType.TryFromName(_typeStr, out NodeType _type))
+                {
+                    if (_type_map.TryGetValue(_type, out Type ncls))
+                    {
+                        node = (Node)Activator.CreateInstance(ncls);
+                        node.Load(raw);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unknown node type: {_type}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid node type: {_typeStr}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Node type not found in the dictionary.");
+            }
+
+            return node;
         }
     }
 }

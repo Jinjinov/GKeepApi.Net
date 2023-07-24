@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ardalis.SmartEnum;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -20,120 +21,124 @@ namespace GoogleKeep
         }
     }
 
-    public enum NodeType
+    public interface ISmartEnum { }
+
+    public sealed class NodeType : SmartEnum<NodeType>, ISmartEnum
     {
-        [JsonPropertyName("NOTE")]
-        Note,
-        [JsonPropertyName("LIST")]
-        List,
-        [JsonPropertyName("LIST_ITEM")]
-        ListItem,
-        [JsonPropertyName("BLOB")]
-        Blob
+        public static readonly NodeType Note = new NodeType("NOTE", 1);
+        public static readonly NodeType List = new NodeType("LIST", 2);
+        public static readonly NodeType ListItem = new NodeType("LIST_ITEM", 3);
+        public static readonly NodeType Blob = new NodeType("BLOB", 4);
+
+        private NodeType(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum BlobType
+    public sealed class BlobType : SmartEnum<BlobType>, ISmartEnum
     {
-        [JsonPropertyName("AUDIO")]
-        Audio,
-        [JsonPropertyName("IMAGE")]
-        Image,
-        [JsonPropertyName("DRAWING")]
-        Drawing
+        public static readonly BlobType Audio = new BlobType("AUDIO", 1);
+        public static readonly BlobType Image = new BlobType("IMAGE", 2);
+        public static readonly BlobType Drawing = new BlobType("DRAWING", 3);
+
+        private BlobType(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum ColorValue
+    public sealed class ColorValue : SmartEnum<ColorValue>, ISmartEnum
     {
-        [JsonPropertyName("DEFAULT")]
-        White,
-        [JsonPropertyName("RED")]
-        Red,
-        [JsonPropertyName("ORANGE")]
-        Orange,
-        [JsonPropertyName("YELLOW")]
-        Yellow,
-        [JsonPropertyName("GREEN")]
-        Green,
-        [JsonPropertyName("TEAL")]
-        Teal,
-        [JsonPropertyName("BLUE")]
-        Blue,
-        [JsonPropertyName("CERULEAN")]
-        DarkBlue,
-        [JsonPropertyName("PURPLE")]
-        Purple,
-        [JsonPropertyName("PINK")]
-        Pink,
-        [JsonPropertyName("BROWN")]
-        Brown,
-        [JsonPropertyName("GRAY")]
-        Gray
+        public static readonly ColorValue White = new ColorValue("DEFAULT", 1);
+        public static readonly ColorValue Red = new ColorValue("RED", 2);
+        public static readonly ColorValue Orange = new ColorValue("ORANGE", 3);
+        public static readonly ColorValue Yellow = new ColorValue("YELLOW", 4);
+        public static readonly ColorValue Green = new ColorValue("GREEN", 5);
+        public static readonly ColorValue Teal = new ColorValue("TEAL", 6);
+        public static readonly ColorValue Blue = new ColorValue("BLUE", 7);
+        public static readonly ColorValue DarkBlue = new ColorValue("CERULEAN", 8);
+        public static readonly ColorValue Purple = new ColorValue("PURPLE", 9);
+        public static readonly ColorValue Pink = new ColorValue("PINK", 10);
+        public static readonly ColorValue Brown = new ColorValue("BROWN", 11);
+        public static readonly ColorValue Gray = new ColorValue("GRAY", 12);
+
+        private ColorValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum CategoryValue
+    public sealed class CategoryValue : SmartEnum<CategoryValue>, ISmartEnum
     {
-        [JsonPropertyName("BOOKS")]
-        Books,
-        [JsonPropertyName("FOOD")]
-        Food,
-        [JsonPropertyName("MOVIES")]
-        Movies,
-        [JsonPropertyName("MUSIC")]
-        Music,
-        [JsonPropertyName("PLACES")]
-        Places,
-        [JsonPropertyName("QUOTES")]
-        Quotes,
-        [JsonPropertyName("TRAVEL")]
-        Travel,
-        [JsonPropertyName("TV")]
-        TV
+        public static readonly CategoryValue Books = new CategoryValue("BOOKS", 1);
+        public static readonly CategoryValue Food = new CategoryValue("FOOD", 2);
+        public static readonly CategoryValue Movies = new CategoryValue("MOVIES", 3);
+        public static readonly CategoryValue Music = new CategoryValue("MUSIC", 4);
+        public static readonly CategoryValue Places = new CategoryValue("PLACES", 5);
+        public static readonly CategoryValue Quotes = new CategoryValue("QUOTES", 6);
+        public static readonly CategoryValue Travel = new CategoryValue("TRAVEL", 7);
+        public static readonly CategoryValue TV = new CategoryValue("TV", 8);
+
+        private CategoryValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum SuggestValue
+    public sealed class SuggestValue : SmartEnum<SuggestValue>, ISmartEnum
     {
-        [JsonPropertyName("GROCERY_ITEM")]
-        GroceryItem
+        public static readonly SuggestValue GroceryItem = new SuggestValue("GROCERY_ITEM", 1);
+
+        private SuggestValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum NewListItemPlacementValue
+    public sealed class NewListItemPlacementValue : SmartEnum<NewListItemPlacementValue>, ISmartEnum
     {
-        [JsonPropertyName("TOP")]
-        Top,
-        [JsonPropertyName("BOTTOM")]
-        Bottom
+        public static readonly NewListItemPlacementValue Top = new NewListItemPlacementValue("TOP", 1);
+        public static readonly NewListItemPlacementValue Bottom = new NewListItemPlacementValue("BOTTOM", 2);
+
+        private NewListItemPlacementValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum GraveyardStateValue
+    public sealed class GraveyardStateValue : SmartEnum<GraveyardStateValue>, ISmartEnum
     {
-        [JsonPropertyName("EXPANDED")]
-        Expanded,
-        [JsonPropertyName("COLLAPSED")]
-        Collapsed
+        public static readonly GraveyardStateValue Expanded = new GraveyardStateValue("EXPANDED", 1);
+        public static readonly GraveyardStateValue Collapsed = new GraveyardStateValue("COLLAPSED", 2);
+
+        private GraveyardStateValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum CheckedListItemsPolicyValue
+    public sealed class CheckedListItemsPolicyValue : SmartEnum<CheckedListItemsPolicyValue>, ISmartEnum
     {
-        [JsonPropertyName("DEFAULT")]
-        Default,
-        [JsonPropertyName("GRAVEYARD")]
-        Graveyard
+        public static readonly CheckedListItemsPolicyValue Default = new CheckedListItemsPolicyValue("DEFAULT", 1);
+        public static readonly CheckedListItemsPolicyValue Graveyard = new CheckedListItemsPolicyValue("GRAVEYARD", 2);
+
+        private CheckedListItemsPolicyValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum ShareRequestValue
+    public sealed class ShareRequestValue : SmartEnum<ShareRequestValue>, ISmartEnum
     {
-        [JsonPropertyName("WR")]
-        Add,
-        [JsonPropertyName("RM")]
-        Remove
+        public static readonly ShareRequestValue Add = new ShareRequestValue("WR", 1);
+        public static readonly ShareRequestValue Remove = new ShareRequestValue("RM", 2);
+
+        private ShareRequestValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
-    public enum RoleValue
+    public sealed class RoleValue : SmartEnum<RoleValue>, ISmartEnum
     {
-        [JsonPropertyName("O")]
-        Owner,
-        [JsonPropertyName("W")]
-        User
+        public static readonly RoleValue Owner = new RoleValue("O", 1);
+        public static readonly RoleValue User = new RoleValue("W", 2);
+
+        private RoleValue(string name, int value) : base(name, value)
+        {
+        }
     }
 
     public interface IElement
@@ -515,7 +520,7 @@ namespace GoogleKeep
                         node = new Category();
                         _annotations[node.Id] = node;
                     }
-                    node.CategoryValue = value.Value;
+                    node.CategoryValue = value;
                 }
                 _dirty = true;
             }
@@ -626,9 +631,9 @@ namespace GoogleKeep
         protected override void _load(Dictionary<string, object> raw)
         {
             base._load(raw);
-            NewListItemPlacement = new NewListItemPlacementValue(raw["newListItemPlacement"].ToString());
-            GraveyardState = new GraveyardStateValue(raw["graveyardState"].ToString());
-            CheckedListItemsPolicy = new CheckedListItemsPolicyValue(raw["checkedListItemsPolicy"].ToString());
+            NewListItemPlacement = NewListItemPlacementValue.FromName(raw["newListItemPlacement"].ToString());
+            GraveyardState = GraveyardStateValue.FromName(raw["graveyardState"].ToString());
+            CheckedListItemsPolicy = CheckedListItemsPolicyValue.FromName(raw["checkedListItemsPolicy"].ToString());
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -643,7 +648,7 @@ namespace GoogleKeep
 
     public class NodeCollaborators : Element
     {
-        private readonly Dictionary<string, RoleValue> _collaborators = new Dictionary<string, RoleValue>();
+        private readonly Dictionary<string, ISmartEnum> _collaborators = new Dictionary<string, ISmartEnum>();
 
         public int Count => _collaborators.Count;
 
@@ -664,7 +669,7 @@ namespace GoogleKeep
             {
                 if (collaborator.ContainsKey("email") && collaborator["email"] is string email)
                 {
-                    _collaborators[email] = new RoleValue(collaborator["role"].ToString());
+                    _collaborators[email] = RoleValue.FromName(collaborator["role"].ToString());
                 }
             }
 
@@ -672,7 +677,7 @@ namespace GoogleKeep
             {
                 if (collaborator.ContainsKey("email") && collaborator["email"] is string email && collaborator.ContainsKey("type") && collaborator["type"] is string type)
                 {
-                    _collaborators[email] = new ShareRequestValue(type);
+                    _collaborators[email] = ShareRequestValue.FromName(type);
                 }
             }
         }
@@ -971,52 +976,6 @@ namespace GoogleKeep
         public Node Parent { get; set; }
         public IReadOnlyDictionary<string, Node> Children => _children;
 
-        public void SortChildren()
-        {
-            List<Node> children = new List<Node>(_children.Values);
-            children.Sort((a, b) => a.Sort.CompareTo(b.Sort));
-
-            _children.Clear();
-            foreach (Node child in children)
-                _children[child.Id] = child;
-        }
-
-        public void TrashChildren()
-        {
-            foreach (Node child in _children.Values)
-                child.Trash();
-        }
-
-        public void UntrashChildren()
-        {
-            foreach (Node child in _children.Values)
-                child.Untrash();
-        }
-
-        public void DeleteChildren()
-        {
-            foreach (Node child in _children.Values)
-                child.Delete();
-        }
-
-        public void UndeleteChildren()
-        {
-            foreach (Node child in _children.Values)
-                child.Undelete();
-        }
-
-        public void SetVersion(string version)
-        {
-            Version = version;
-            Moved = false;
-        }
-
-        public void ClearVersion()
-        {
-            Version = null;
-            Moved = false;
-        }
-
         public bool Moved { get; set; }
 
         public bool New
@@ -1032,6 +991,39 @@ namespace GoogleKeep
         public bool Deleted
         {
             get { return Timestamps.Deleted != null && Timestamps.Deleted > NodeTimestamps.IntToDt(0); }
+        }
+
+        public Node Get(string node_id)
+        {
+            // Get child node with the given ID.
+            return this._children.ContainsKey(node_id) ? this._children[node_id] : null;
+        }
+
+        public Node Append(Node node, bool dirty = true)
+        {
+            // Add a new child node.
+            this._children[node.Id] = node;
+            node.Parent = this;
+            if (dirty)
+            {
+                this.Touch();
+            }
+
+            return node;
+        }
+
+        public void Remove(Node node, bool dirty = true)
+        {
+            // Remove the given child node.
+            if (this._children.ContainsKey(node.Id))
+            {
+                this._children[node.Id].Parent = null;
+                this._children.Remove(node.Id);
+            }
+            if (dirty)
+            {
+                this.Touch();
+            }
         }
     }
 
@@ -1475,7 +1467,7 @@ namespace GoogleKeep
             set { _mimeType = value; }
         }
 
-        public NodeBlob(BlobType type = BlobType.Audio)
+        public NodeBlob(BlobType type)
         {
             Type = type;
         }
