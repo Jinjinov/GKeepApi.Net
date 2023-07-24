@@ -10,6 +10,11 @@ namespace GoogleKeep
 {
     public static class DictionaryExtensions
     {
+        public static T GetValueOrDefault<T>(this Dictionary<string, object> dictionary, string key, T defaultValue)
+        {
+            return dictionary.TryGetValue(key, out object value) && value is T val ? val : defaultValue;
+        }
+
         public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default)
         {
             return dictionary.TryGetValue(key, out TValue value) ? value : defaultValue;
@@ -919,7 +924,7 @@ namespace GoogleKeep
             return BitConverter.ToInt64(buffer, 0);
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             // Verify this is a valid type
@@ -944,9 +949,9 @@ namespace GoogleKeep
             Annotations.Load(raw["annotationsGroup"]);
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
-            Dictionary<string, dynamic> ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["id"] = Id;
             ret["kind"] = "notes#node";
             ret["type"] = (int)Type;
@@ -1047,7 +1052,7 @@ namespace GoogleKeep
         public NodeLabels Labels { get; set; }
         public NodeCollaborators Collaborators { get; set; }
 
-        public TopLevelNode(Dictionary<string, dynamic> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id") as string)
+        public TopLevelNode(Dictionary<string, object> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
         {
             this._color = (ColorValue)kwargs.GetValueOrDefault("color", ColorValue.White);
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
@@ -1059,7 +1064,7 @@ namespace GoogleKeep
 
         public override bool Dirty => base.Dirty || Labels.Dirty || Collaborators.Dirty;
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             this._color = (ColorValue)(raw.ContainsKey("color") ? raw["color"] : ColorValue.White);
@@ -1074,9 +1079,9 @@ namespace GoogleKeep
             this.Moved = raw.ContainsKey("moved");
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
-            Dictionary<string, dynamic> ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["color"] = this._color;
             ret["isArchived"] = this._archived;
             ret["isPinned"] = this._pinned;
@@ -1145,7 +1150,7 @@ namespace GoogleKeep
 
     public class Note : TopLevelNode
     {
-        public Note(Dictionary<string, dynamic> kwargs = null) : base(kwargs: kwargs, type: NodeType.Note)
+        public Note(Dictionary<string, object> kwargs = null) : base(kwargs: kwargs, type: NodeType.Note)
         {
             _TYPE = NodeType.Note;
         }
@@ -1189,7 +1194,7 @@ namespace GoogleKeep
     {
         public const int SORT_DELTA = 10000;
 
-        public List(Dictionary<string, dynamic> kwargs = null) : base(kwargs: kwargs, type: NodeType.List)
+        public List(Dictionary<string, object> kwargs = null) : base(kwargs: kwargs, type: NodeType.List)
         {
             _TYPE = NodeType.List;
         }
@@ -1264,7 +1269,7 @@ namespace GoogleKeep
 
     public class ListItem : Node
     {
-        public ListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, dynamic> kwargs = null)
+        public ListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, object> kwargs = null)
             : base(type: NodeType.ListItem, parentId: parentId)
         {
             this.ParentItem = null;
@@ -1283,7 +1288,7 @@ namespace GoogleKeep
         private Dictionary<string, ListItem> _subitems;
         protected bool _checked;
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             this.PrevSuperListItemId = this.SuperListItemId;
@@ -1291,9 +1296,9 @@ namespace GoogleKeep
             this._checked = raw.GetValueOrDefault("checked", false);
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
-            Dictionary<string, dynamic> ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["parentServerId"] = this.ParentServerId;
             ret["superListItemId"] = this.SuperListItemId;
             ret["checked"] = this._checked;
@@ -1473,7 +1478,7 @@ namespace GoogleKeep
             Type = type;
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             // Verify this is a valid type
@@ -1494,7 +1499,7 @@ namespace GoogleKeep
             MimeType = raw.ContainsKey("mimetype") ? raw["mimetype"] : null;
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["kind"] = "notes#blob";
@@ -1527,13 +1532,13 @@ namespace GoogleKeep
         {
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             Length = raw.ContainsKey("length") ? raw["length"] : 0;
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             if (Length > 0)
@@ -1559,7 +1564,7 @@ namespace GoogleKeep
             IsUploaded = false;
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             IsUploaded = raw.ContainsKey("is_uploaded") ? raw["is_uploaded"] : false;
@@ -1570,7 +1575,7 @@ namespace GoogleKeep
             ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] : "";
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["width"] = Width;
@@ -1594,7 +1599,7 @@ namespace GoogleKeep
             DrawingInfo = new NodeDrawingInfo();
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] : "";
@@ -1605,7 +1610,7 @@ namespace GoogleKeep
             }
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["extracted_text"] = ExtractedText;
@@ -1633,7 +1638,7 @@ namespace GoogleKeep
             ThumbnailGeneratedTime = new DateTime(0);
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             DrawingId = raw["drawingId"];
@@ -1646,7 +1651,7 @@ namespace GoogleKeep
             _snapshotProtoFprint = raw.ContainsKey("snapshotProtoFprint") ? raw["snapshotProtoFprint"] : _snapshotProtoFprint;
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["drawingId"] = DrawingId;
@@ -1668,7 +1673,7 @@ namespace GoogleKeep
         { BlobType.Drawing, typeof(NodeDrawing) }
     };
 
-        public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
+        public Blob(string parentId = null, Dictionary<string, object> kwargs = null)
             : base(type: NodeType.Blob, parentId: parentId)
         {
             NodeBlob = null;
@@ -1676,7 +1681,7 @@ namespace GoogleKeep
 
         public NodeBlob NodeBlob { get; private set; }
 
-        public static NodeBlob FromJson(Dictionary<string, dynamic> raw)
+        public static NodeBlob FromJson(Dictionary<string, object> raw)
         {
             if (raw == null)
             {
@@ -1703,13 +1708,13 @@ namespace GoogleKeep
             return blob;
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             NodeBlob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
         }
 
-        public override Dictionary<string, dynamic> Save(bool clean = true)
+        public override Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             if (NodeBlob != null)
@@ -1742,7 +1747,7 @@ namespace GoogleKeep
             return $"tag.{string.Join("", Enumerable.Range(0, 12).Select(_ => "abcdefghijklmnopqrstuvwxyz0123456789"[new Random().Next(36)]))}.{(long)(tz * 1000)}";
         }
 
-        public override void Load(Dictionary<string, dynamic> raw)
+        public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
             this.Id = raw["mainId"];
@@ -1751,7 +1756,7 @@ namespace GoogleKeep
             this._merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"]) : NodeTimestamps.IntToDt(0);
         }
 
-        public new Dictionary<string, dynamic> Save(bool clean = true)
+        public new Dictionary<string, object> Save(bool clean = true)
         {
             var ret = base.Save(clean);
             ret["mainId"] = this.Id;
