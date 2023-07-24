@@ -6,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 /// <summary>
 /// __init__.py
@@ -606,6 +604,17 @@ namespace GoogleKeep
             _nodes[GoogleKeep.Root.ID] = root_node;
         }
 
+        string GetMac()
+        {
+            string firstMacAddress = NetworkInterface
+                .GetAllNetworkInterfaces()
+                .Where(nic => nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .Select(nic => nic.GetPhysicalAddress().ToString())
+                .FirstOrDefault();
+
+            return firstMacAddress;
+        }
+
         public async Task<bool> Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
         {
             var auth = new APIAuth(OAUTH_SCOPES);
@@ -957,15 +966,6 @@ namespace GoogleKeep
                         node = _nodes[superListItemId] as ListItem;
                         node.Indent(listItemNodes.Last(), false);
                     }
-                }
-            }
-
-            foreach (var node in listItemNodes)
-            {
-                if (node.NextListItemId != node.Id)
-                {
-                    var nextListItemNode = _nodes[node.NextListItemId];
-                    node.Indent(nextListItemNode, false);
                 }
             }
 
