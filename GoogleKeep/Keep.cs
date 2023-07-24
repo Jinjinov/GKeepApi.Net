@@ -44,21 +44,14 @@ namespace GoogleKeep
             string clientId = "YOUR_CLIENT_ID";
             string clientSecret = "YOUR_CLIENT_SECRET";
 
-            // The scopes that your application needs access to
-            _scopes = new string[]
-            {
-                "https://www.googleapis.com/auth/drive.readonly", // Replace with your desired scopes
-                // Add more scopes as needed for the services you want to access
-            };
-
             // Create the credentials object
             using (var stream = new System.IO.FileStream("path/to/client-secrets.json", System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
                 _credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
+                    GoogleClientSecrets.FromStream(stream).Secrets,
                     _scopes,
                     "user",
-                    System.Threading.CancellationToken.None,
+                    CancellationToken.None,
                     new FileDataStore(_credentialPath, true)).Result;
             }
 
@@ -107,7 +100,7 @@ namespace GoogleKeep
             try
             {
                 // Revoke the access token to invalidate it
-                _credential.RevokeTokenAsync(System.Threading.CancellationToken.None).Wait();
+                _credential.RevokeTokenAsync(CancellationToken.None).Wait();
 
                 // Clear the stored user credentials from the FileDataStore
                 new FileDataStore(_credentialPath, true).ClearAsync().Wait();
@@ -574,8 +567,8 @@ namespace GoogleKeep
         private readonly MediaAPI _media_api;
         private string _keep_version;
         private string _reminder_version;
-        private readonly Dictionary<string, GoogleKeep.Label> _labels;
-        private readonly Dictionary<string, GoogleKeep.Node> _nodes;
+        private readonly Dictionary<string, Label> _labels;
+        private readonly Dictionary<string, Node> _nodes;
         private readonly Dictionary<string, string> _sid_map;
 
         public Keep()
@@ -585,8 +578,8 @@ namespace GoogleKeep
             _media_api = new MediaAPI();
             _keep_version = null;
             _reminder_version = null;
-            _labels = new Dictionary<string, GoogleKeep.Label>();
-            _nodes = new Dictionary<string, GoogleKeep.Node>();
+            _labels = new Dictionary<string, Label>();
+            _nodes = new Dictionary<string, Node>();
             _sid_map = new Dictionary<string, string>();
 
             Clear();
@@ -600,8 +593,8 @@ namespace GoogleKeep
             _nodes.Clear();
             _sid_map.Clear();
 
-            var root_node = new GoogleKeep.Root();
-            _nodes[GoogleKeep.Root.ID] = root_node;
+            var root_node = new Root();
+            _nodes[Root.ID] = root_node;
         }
 
         string GetMac()
@@ -671,7 +664,7 @@ namespace GoogleKeep
 
         public Dictionary<string, object> Dump()
         {
-            var nodes = new List<GoogleKeep.Node>();
+            var nodes = new List<Node>();
             foreach (var node in All())
             {
                 nodes.Add(node);
@@ -706,14 +699,14 @@ namespace GoogleKeep
             _keep_version = state["keep_version"].ToString();
         }
 
-        public GoogleKeep.Node Get(string node_id)
+        public Node Get(string node_id)
         {
-            return _nodes[GoogleKeep.Root.ID].Get(node_id) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(node_id));
+            return _nodes[Root.ID].Get(node_id) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(node_id));
         }
 
-        public void Add(GoogleKeep.Node node)
+        public void Add(Node node)
         {
-            if (node.ParentId != GoogleKeep.Root.ID)
+            if (node.ParentId != Root.ID)
             {
                 throw new Exception("Not a top level node");
             }
@@ -722,17 +715,17 @@ namespace GoogleKeep
             _nodes[node.ParentId].Append(node, false);
         }
 
-        public IEnumerable<GoogleKeep.Node> Find(
+        public IEnumerable<Node> Find(
             object query = null,
-            Func<GoogleKeep.Node, bool> func = null,
+            Func<Node, bool> func = null,
             List<object> labels = null,
-            List<GoogleKeep.ColorValue> colors = null,
+            List<ColorValue> colors = null,
             bool? pinned = null,
             bool? archived = null,
             bool trashed = false)
         {
             if (labels != null)
-                labels = labels.Select(l => l is GoogleKeep.Label lbl ? lbl.Id : l).ToList();
+                labels = labels.Select(l => l is Label lbl ? lbl.Id : l).ToList();
 
             return All().Where(node =>
             {
@@ -740,7 +733,7 @@ namespace GoogleKeep
                     (query is string str && (node.Title.Contains(str) || node.Text.Contains(str))) ||
                     (query is Regex regex && (regex.IsMatch(node.Title) || regex.IsMatch(node.Text))))
                     && (func == null || func(node))
-                    && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => l is GoogleKeep.Label lbl ? node.Labels.ContainsKey(lbl.Id) : l is string id ? node.Labels.ContainsKey(id) : false))
+                    && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => l is Label lbl ? node.Labels.ContainsKey(lbl.Id) : l is string id ? node.Labels.ContainsKey(id) : false))
                     && (colors == null || colors.Contains(node.Color))
                     && (pinned == null || node.Pinned == pinned)
                     && (archived == null || node.Archived == archived)
@@ -748,9 +741,9 @@ namespace GoogleKeep
             });
         }
 
-        public GoogleKeep.Note CreateNote(string title = null, string text = null)
+        public Note CreateNote(string title = null, string text = null)
         {
-            var node = new GoogleKeep.Note();
+            var node = new Note();
             if (title != null)
             {
                 node.Title = title;
@@ -763,14 +756,14 @@ namespace GoogleKeep
             return node;
         }
 
-        public GoogleKeep.List CreateList(string title = null, List<(string, bool)> items = null)
+        public List CreateList(string title = null, List<(string, bool)> items = null)
         {
             if (items == null)
             {
                 items = new List<(string, bool)>();
             }
 
-            var node = new GoogleKeep.List();
+            var node = new List();
             if (title != null)
             {
                 node.Title = title;
@@ -786,19 +779,19 @@ namespace GoogleKeep
             return node;
         }
 
-        public GoogleKeep.Label CreateLabel(string name)
+        public Label CreateLabel(string name)
         {
             if (FindLabel(name) != null)
             {
                 throw new Exception("Label exists");
             }
-            var node = new GoogleKeep.Label();
+            var node = new Label();
             node.Name = name;
             _labels[node.Id] = node;
             return node;
         }
 
-        public GoogleKeep.Label FindLabel(object query, bool create = false)
+        public Label FindLabel(object query, bool create = false)
         {
             var is_str = query is string;
             var name = is_str ? (string)query : null;
@@ -816,7 +809,7 @@ namespace GoogleKeep
             return create && is_str ? CreateLabel(name) : null;
         }
 
-        public GoogleKeep.Label GetLabel(string label_id)
+        public Label GetLabel(string label_id)
         {
             return _labels.GetValueOrDefault(label_id);
         }
@@ -833,19 +826,19 @@ namespace GoogleKeep
             }
         }
 
-        public IEnumerable<GoogleKeep.Label> Labels()
+        public IEnumerable<Label> Labels()
         {
             return _labels.Values;
         }
 
-        public async Task<string> GetMediaLink(GoogleKeep.Blob blob)
+        public async Task<string> GetMediaLink(Blob blob)
         {
             return await _media_api.Get(blob);
         }
 
-        public IEnumerable<GoogleKeep.TopLevelNode> All()
+        public IEnumerable<TopLevelNode> All()
         {
-            return _nodes[GoogleKeep.Root.ID].Children.Values.OfType<TopLevelNode>();
+            return _nodes[Root.ID].Children.Values.OfType<TopLevelNode>();
         }
 
         public async Task Sync(bool resync = false)
@@ -913,9 +906,9 @@ namespace GoogleKeep
 
         private void ParseNodes(List<Dictionary<string, object>> raw)
         {
-            var createdNodes = new List<GoogleKeep.Node>();
-            var deletedNodes = new List<GoogleKeep.Node>();
-            var listItemNodes = new List<GoogleKeep.ListItem>();
+            var createdNodes = new List<Node>();
+            var deletedNodes = new List<Node>();
+            var listItemNodes = new List<ListItem>();
 
             foreach (var rawNode in raw)
             {
@@ -1008,7 +1001,7 @@ namespace GoogleKeep
                     }
                     else
                     {
-                        node = new GoogleKeep.Label();
+                        node = new Label();
                         Console.WriteLine($"Created label: {labelId}");
                     }
 
@@ -1027,10 +1020,10 @@ namespace GoogleKeep
             }
         }
 
-        private List<GoogleKeep.Node> FindDirtyNodes()
+        private List<Node> FindDirtyNodes()
         {
             var foundIds = new Dictionary<string, object>();
-            var nodes = new List<GoogleKeep.Node> { _nodes[GoogleKeep.Root.ID] };
+            var nodes = new List<Node> { _nodes[Root.ID] };
 
             while (nodes.Count > 0)
             {
@@ -1040,7 +1033,7 @@ namespace GoogleKeep
                 nodes.AddRange(node.Children.Values);
             }
 
-            var dirtyNodes = new List<GoogleKeep.Node>();
+            var dirtyNodes = new List<Node>();
             foreach (var node in _nodes.Values)
             {
                 if (node.Dirty)
@@ -1055,7 +1048,7 @@ namespace GoogleKeep
         private void Clean()
         {
             var foundIds = new Dictionary<string, object>();
-            var nodes = new List<GoogleKeep.Node> { _nodes[GoogleKeep.Root.ID] };
+            var nodes = new List<Node> { _nodes[Root.ID] };
 
             while (nodes.Count > 0)
             {
