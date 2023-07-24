@@ -1663,7 +1663,7 @@ namespace GoogleKeep
     };
 
         public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(type:NodeType.Blob, parentId:parentId, kwargs)
+            : base(kwargs, type: NodeType.Blob, parentId: parentId)
         {
             NodeBlob = null;
         }
