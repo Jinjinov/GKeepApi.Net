@@ -1047,7 +1047,7 @@ namespace GoogleKeep
         public NodeLabels Labels { get; set; }
         public NodeCollaborators Collaborators { get; set; }
 
-        public TopLevelNode(Dictionary<string, dynamic> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
+        public TopLevelNode(Dictionary<string, dynamic> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id") as string)
         {
             this._color = (ColorValue)kwargs.GetValueOrDefault("color", ColorValue.White);
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
@@ -1145,7 +1145,7 @@ namespace GoogleKeep
 
     public class Note : TopLevelNode
     {
-        public Note(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: NodeType.Note)
+        public Note(Dictionary<string, dynamic> kwargs = null) : base(kwargs: kwargs, type: NodeType.Note)
         {
             _TYPE = NodeType.Note;
         }
@@ -1189,7 +1189,7 @@ namespace GoogleKeep
     {
         public const int SORT_DELTA = 10000;
 
-        public List(Dictionary<string, dynamic> kwargs) : base(kwargs: kwargs, type: NodeType.List)
+        public List(Dictionary<string, dynamic> kwargs = null) : base(kwargs: kwargs, type: NodeType.List)
         {
             _TYPE = NodeType.List;
         }
@@ -1265,7 +1265,7 @@ namespace GoogleKeep
     public class ListItem : Node
     {
         public ListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(kwargs, type: NodeType.ListItem, parentId: parentId)
+            : base(type: NodeType.ListItem, parentId: parentId)
         {
             this.ParentItem = null;
             this.ParentServerId = parentServerId;
@@ -1669,7 +1669,7 @@ namespace GoogleKeep
     };
 
         public Blob(string parentId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(kwargs, type: NodeType.Blob, parentId: parentId)
+            : base(type: NodeType.Blob, parentId: parentId)
         {
             NodeBlob = null;
         }
