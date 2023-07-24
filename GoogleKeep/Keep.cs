@@ -557,7 +557,7 @@ namespace GoogleKeep
         }
     }
 
-    public class Keep
+    public class Keep : IKeep
     {
         // OAuth scopes
         private readonly string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
