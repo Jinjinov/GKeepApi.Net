@@ -1,13 +1,13 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -154,7 +154,7 @@ namespace GoogleKeep
             {
                 var response = await _Send(req_kwargs);
                 var content = await response.Content.ReadAsStringAsync();
-                var responseData = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
+                var responseData = JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
 
                 if (!responseData.ContainsKey("error"))
                 {
@@ -205,7 +205,7 @@ namespace GoogleKeep
             {
                 if (req_kwargs.ContainsKey("json"))
                 {
-                    var jsonBody = JsonSerializer.Serialize(req_kwargs["json"]);
+                    var jsonBody = JsonConvert.SerializeObject(req_kwargs["json"]);
                     var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                     return await _httpClient.PostAsync(url, content);
                 }
