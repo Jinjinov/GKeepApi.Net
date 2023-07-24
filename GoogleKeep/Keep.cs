@@ -740,7 +740,7 @@ namespace GoogleKeep
                     (query is string str && (node.Title.Contains(str) || node.Text.Contains(str))) ||
                     (query is Regex regex && (regex.IsMatch(node.Title) || regex.IsMatch(node.Text))))
                     && (func == null || func(node))
-                    && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => node.Labels.ContainsKey(l)))
+                    && (labels == null || (!labels.Any() && !node.Labels.Any()) || labels.Any(l => l is GoogleKeep.Label lbl ? node.Labels.ContainsKey(lbl.Id) : l is string id ? node.Labels.ContainsKey(id) : false))
                     && (colors == null || colors.Contains(node.Color))
                     && (pinned == null || node.Pinned == pinned)
                     && (archived == null || node.Archived == archived)
@@ -988,7 +988,7 @@ namespace GoogleKeep
             {
                 foreach (var labelId in node.Labels.Keys)
                 {
-                    node.Labels[labelId] = _labels.GetValueOrDefault(labelId);
+                    node.Labels.Add(_labels.GetValueOrDefault(labelId));
                 }
             }
         }

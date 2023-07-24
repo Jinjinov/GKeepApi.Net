@@ -755,13 +755,15 @@ namespace GoogleKeep
 
         public int Count => _labels.Count;
 
+        public Dictionary<string, Label>.KeyCollection Keys => _labels.Keys;
+
         protected override void _load(Dictionary<string, object> raw)
         {
             base._load(raw);
-            if (raw.Count > 0 && raw[raw.Count - 1] is bool)
+            if (raw.Count > 0 && raw.Last().Value is bool dirty)
             {
-                _dirty = (bool)raw[raw.Count - 1];
-                raw.RemoveAt(raw.Count - 1);
+                _dirty = dirty;
+                raw.Remove(raw.Last().Key);
             }
             else
             {
@@ -795,6 +797,10 @@ namespace GoogleKeep
 
             return ret;
         }
+
+        public bool Any() => _labels.Any();
+
+        public bool ContainsKey(string id) => _labels.ContainsKey(id);
 
         public void Add(Label label)
         {
@@ -1259,7 +1265,7 @@ namespace GoogleKeep
     public class ListItem : Node
     {
         public ListItem(string parentId = null, string parentServerId = null, string superListItemId = null, Dictionary<string, dynamic> kwargs = null)
-            : base(type: NodeType.ListItem, parentId: parentId, kwargs: kwargs)
+            : base(kwargs, type: NodeType.ListItem, parentId: parentId)
         {
             this.ParentItem = null;
             this.ParentServerId = parentServerId;
