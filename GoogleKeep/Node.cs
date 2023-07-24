@@ -328,7 +328,7 @@ namespace GoogleKeep
 
             if (raw["topicCategory"] is Dictionary<string, object> topicCategory)
             {
-                _category = (CategoryValue)Enum.Parse(typeof(CategoryValue), topicCategory["category"].ToString());
+                _category = CategoryValue.FromName(topicCategory["category"].ToString());
             }
         }
 
@@ -928,8 +928,8 @@ namespace GoogleKeep
         {
             base.Load(raw);
             // Verify this is a valid type
-            NodeType rawType = raw["type"];
-            if (!Enum.IsDefined(typeof(NodeType), rawType))
+            string rawType = raw["type"] as string;
+            if (!NodeType.TryFromName(rawType, out NodeType nodeType))
                 throw new InvalidOperationException("Invalid node type: " + rawType);
 
             if (raw["kind"] != "notes#node")
@@ -938,15 +938,15 @@ namespace GoogleKeep
             if (raw.ContainsKey("mergeConflict"))
                 throw new Exception("Merge exception");
 
-            Id = raw["id"];
-            ServerId = raw.ContainsKey("serverId") ? raw["serverId"] : ServerId;
-            ParentId = raw["parentId"];
+            Id = raw["id"] as string;
+            ServerId = raw.ContainsKey("serverId") ? raw["serverId"] as string : ServerId;
+            ParentId = raw["parentId"] as string;
             Sort = raw.ContainsKey("sortValue") ? (long)raw["sortValue"] : Sort;
-            Version = raw.ContainsKey("baseVersion") ? raw["baseVersion"] : Version;
-            Text = raw.ContainsKey("text") ? raw["text"] : Text;
-            Timestamps.Load(raw["timestamps"]);
-            Settings.Load(raw["nodeSettings"]);
-            Annotations.Load(raw["annotationsGroup"]);
+            Version = raw.ContainsKey("baseVersion") ? raw["baseVersion"] as string : Version;
+            Text = raw.ContainsKey("text") ? raw["text"] as string : Text;
+            Timestamps.Load(raw["timestamps"] as Dictionary<string, object>);
+            Settings.Load(raw["nodeSettings"] as Dictionary<string, object>);
+            Annotations.Load(raw["annotationsGroup"] as Dictionary<string, object>);
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1052,7 +1052,7 @@ namespace GoogleKeep
         public NodeLabels Labels { get; set; }
         public NodeCollaborators Collaborators { get; set; }
 
-        public TopLevelNode(Dictionary<string, object> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id"))
+        public TopLevelNode(Dictionary<string, object> kwargs, NodeType type) : base(type: type, parentId: Root.ID, id: kwargs.GetValueOrDefault("id") as string)
         {
             this._color = (ColorValue)kwargs.GetValueOrDefault("color", ColorValue.White);
             this._archived = kwargs.GetValueOrDefault("isArchived", false);
@@ -1068,13 +1068,13 @@ namespace GoogleKeep
         {
             base.Load(raw);
             this._color = (ColorValue)(raw.ContainsKey("color") ? raw["color"] : ColorValue.White);
-            this._archived = raw.ContainsKey("isArchived") ? raw["isArchived"] : false;
-            this._pinned = raw.ContainsKey("isPinned") ? raw["isPinned"] : false;
-            this._title = raw.ContainsKey("title") ? raw["title"] : "";
-            this.Labels.Load(raw.ContainsKey("labelIds") ? raw["labelIds"] : new List<string>());
+            this._archived = raw.ContainsKey("isArchived") ? bool.Parse(raw["isArchived"] as string) : false;
+            this._pinned = raw.ContainsKey("isPinned") ? bool.Parse(raw["isPinned"] as string) : false;
+            this._title = raw.ContainsKey("title") ? raw["title"] as string : "";
+            this.Labels.Load(raw.ContainsKey("labelIds") ? raw["labelIds"] as Dictionary<string, object> : new Dictionary<string, object>());
             this.Collaborators.Load(
-                raw.ContainsKey("roleInfo") ? raw["roleInfo"] : new List<string>(),
-                raw.ContainsKey("shareRequests") ? raw["shareRequests"] : new List<string>()
+                raw.ContainsKey("roleInfo") ? raw["roleInfo"] as List<Dictionary<string, object>> : new List<Dictionary<string, object>>(),
+                raw.ContainsKey("shareRequests") ? raw["shareRequests"] as List<Dictionary<string, object>> : new List<Dictionary<string, object>>()
             );
             this.Moved = raw.ContainsKey("moved");
         }
@@ -1292,7 +1292,7 @@ namespace GoogleKeep
         {
             base.Load(raw);
             this.PrevSuperListItemId = this.SuperListItemId;
-            this.SuperListItemId = raw.GetValueOrDefault("superListItemId");
+            this.SuperListItemId = raw.GetValueOrDefault("superListItemId") as string;
             this._checked = raw.GetValueOrDefault("checked", false);
         }
 
@@ -1486,7 +1486,7 @@ namespace GoogleKeep
             {
                 try
                 {
-                    Type = (BlobType)Enum.Parse(typeof(BlobType), raw["type"]);
+                    Type = BlobType.FromName(raw["type"] as string);
                 }
                 catch (ArgumentException)
                 {
@@ -1494,9 +1494,9 @@ namespace GoogleKeep
                     throw new ArgumentException("Invalid BlobType");
                 }
             }
-            BlobId = raw.ContainsKey("blob_id") ? raw["blob_id"] : null;
-            MediaId = raw.ContainsKey("media_id") ? raw["media_id"] : null;
-            MimeType = raw.ContainsKey("mimetype") ? raw["mimetype"] : null;
+            BlobId = raw.ContainsKey("blob_id") ? raw["blob_id"] as string : null;
+            MediaId = raw.ContainsKey("media_id") ? raw["media_id"] as string : null;
+            MimeType = raw.ContainsKey("mimetype") ? raw["mimetype"] as string : null;
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1535,7 +1535,7 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            Length = raw.ContainsKey("length") ? raw["length"] : 0;
+            Length = raw.ContainsKey("length") ? int.Parse(raw["length"] as string) : 0;
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1567,12 +1567,12 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            IsUploaded = raw.ContainsKey("is_uploaded") ? raw["is_uploaded"] : false;
-            Width = raw.ContainsKey("width") ? raw["width"] : 0;
-            Height = raw.ContainsKey("height") ? raw["height"] : 0;
-            ByteSize = raw.ContainsKey("byte_size") ? raw["byte_size"] : 0;
-            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] : "";
-            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] : "";
+            IsUploaded = raw.ContainsKey("is_uploaded") ? bool.Parse(raw["is_uploaded"] as string) : false;
+            Width = raw.ContainsKey("width") ? int.Parse(raw["width"] as string) : 0;
+            Height = raw.ContainsKey("height") ? int.Parse(raw["height"] as string) : 0;
+            ByteSize = raw.ContainsKey("byte_size") ? int.Parse(raw["byte_size"] as string) : 0;
+            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] as string : "";
+            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] as string : "";
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1602,11 +1602,11 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] : "";
-            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] : "";
+            ExtractedText = raw.ContainsKey("extracted_text") ? raw["extracted_text"] as string : "";
+            ExtractionStatus = raw.ContainsKey("extraction_status") ? raw["extraction_status"] as string : "";
             if (raw.ContainsKey("drawingInfo"))
             {
-                DrawingInfo.Load(raw["drawingInfo"]);
+                DrawingInfo.Load(raw["drawingInfo"] as Dictionary<string, object>);
             }
         }
 
@@ -1641,14 +1641,14 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            DrawingId = raw["drawingId"];
-            Snapshot.Load(raw["snapshotData"]);
-            _snapshotFingerprint = raw.ContainsKey("snapshotFingerprint") ? raw["snapshotFingerprint"] : _snapshotFingerprint;
+            DrawingId = raw["drawingId"] as string;
+            Snapshot.Load(raw["snapshotData"] as Dictionary<string, object>);
+            _snapshotFingerprint = raw.ContainsKey("snapshotFingerprint") ? raw["snapshotFingerprint"] as string : _snapshotFingerprint;
             ThumbnailGeneratedTime = raw.ContainsKey("thumbnailGeneratedTime")
-                ? DateTime.Parse(raw["thumbnailGeneratedTime"])
+                ? DateTime.Parse(raw["thumbnailGeneratedTime"] as string)
                 : new DateTime(0);
-            _inkHash = raw.ContainsKey("inkHash") ? raw["inkHash"] : "";
-            _snapshotProtoFprint = raw.ContainsKey("snapshotProtoFprint") ? raw["snapshotProtoFprint"] : _snapshotProtoFprint;
+            _inkHash = raw.ContainsKey("inkHash") ? raw["inkHash"] as string : "";
+            _snapshotProtoFprint = raw.ContainsKey("snapshotProtoFprint") ? raw["snapshotProtoFprint"] as string : _snapshotProtoFprint;
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1695,7 +1695,7 @@ namespace GoogleKeep
 
             Type? bcls = null;
 
-            if (!Enum.TryParse(raw["type"], out BlobType type) || !_blobTypeMap.TryGetValue(type, out bcls))
+            if (!BlobType.TryFromName(raw["type"] as string, out BlobType type) || !_blobTypeMap.TryGetValue(type, out bcls))
             {
                 // Handle unknown blob types
                 // logger.Warning("Unknown blob type: " + type);
@@ -1711,7 +1711,7 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            NodeBlob = FromJson(raw.ContainsKey("blob") ? raw["blob"] : null);
+            NodeBlob = FromJson(raw.ContainsKey("blob") ? raw["blob"] as Dictionary<string, object> : null);
         }
 
         public override Dictionary<string, object> Save(bool clean = true)
@@ -1750,10 +1750,10 @@ namespace GoogleKeep
         public override void Load(Dictionary<string, object> raw)
         {
             base.Load(raw);
-            this.Id = raw["mainId"];
-            this._name = raw["name"];
-            this.Timestamps.Load(raw["timestamps"]);
-            this._merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"]) : NodeTimestamps.IntToDt(0);
+            this.Id = raw["mainId"] as string;
+            this._name = raw["name"] as string;
+            this.Timestamps.Load(raw["timestamps"] as Dictionary<string, object>);
+            this._merged = raw.ContainsKey("lastMerged") ? NodeTimestamps.StrToDt(raw["lastMerged"] as string) : NodeTimestamps.IntToDt(0);
         }
 
         public new Dictionary<string, object> Save(bool clean = true)
