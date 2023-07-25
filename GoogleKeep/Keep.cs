@@ -1,13 +1,13 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Util;
 using Google.Apis.Util.Store;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Net.NetworkInformation;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -143,8 +143,7 @@ namespace GoogleKeep
             while (true)
             {
                 var response = await _Send(req_kwargs);
-                var content = await response.Content.ReadAsStringAsync();
-                var responseData = JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
+                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
 
                 if (!responseData.ContainsKey("error"))
                 {
@@ -191,15 +190,37 @@ namespace GoogleKeep
 
             if (method == "GET")
             {
-                return await _httpClient.GetAsync(url);
+                HttpRequestMessage requestMessage = new HttpRequestMessage()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = new Uri(url),
+                };
+
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth_token);
+
+                return await _httpClient.SendAsync(requestMessage);
+
+                //return await _httpClient.GetAsync(url);
             }
             else if (method == "POST")
             {
                 if (req_kwargs.ContainsKey("json"))
                 {
-                    var jsonBody = JsonConvert.SerializeObject(req_kwargs["json"]);
-                    var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                    return await _httpClient.PostAsync(url, content);
+                    HttpRequestMessage requestMessage = new HttpRequestMessage()
+                    {
+                        Method = HttpMethod.Post,
+                        RequestUri = new Uri(url),
+                    };
+
+                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth_token);
+
+                    requestMessage.Content = JsonContent.Create(req_kwargs["json"]);
+
+                    //var jsonBody = JsonConvert.SerializeObject(req_kwargs["json"]);
+                    //var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                    //return await _httpClient.PostAsync(url, content);
+
+                    return await _httpClient.SendAsync(requestMessage);
                 }
             }
 
