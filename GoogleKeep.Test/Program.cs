@@ -8,6 +8,8 @@ namespace GoogleKeep.Test
         {
             IKeep keep = new Keep();
 
+            keep.Login();
+
             var notes = keep.All();
 
             foreach (var note in notes)

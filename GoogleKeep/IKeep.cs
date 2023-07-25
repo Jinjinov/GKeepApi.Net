@@ -20,8 +20,8 @@ namespace GoogleKeep
         string GetMasterToken();
         Task<string> GetMediaLink(Blob blob);
         IEnumerable<Label> Labels();
-        Task<bool> Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string device_id = null);
-        Task<bool> Resume(string email, string master_token, Dictionary<string, object> state = null, bool sync = true, string device_id = null);
+        Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string device_id = null);
+        Task<bool> Resume(string email = null, string master_token = null, Dictionary<string, object> state = null, bool sync = true, string device_id = null);
         Task Sync(bool resync = false);
     }
 }
