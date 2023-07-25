@@ -615,7 +615,7 @@ namespace GoogleKeep
                 device_id = GetMac();
             }
 
-            var ret = auth.Login(email, password, device_id);
+            var ret = await auth.Login(email, password, device_id);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -632,7 +632,7 @@ namespace GoogleKeep
                 device_id = GetMac();
             }
 
-            var ret = auth.Load(email, master_token, device_id);
+            var ret = await auth.Load(email, master_token, device_id);
             if (ret)
             {
                 await Load(auth, state, sync);
