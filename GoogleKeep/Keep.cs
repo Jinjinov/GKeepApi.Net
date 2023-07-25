@@ -19,10 +19,10 @@ namespace GoogleKeep
 {
     public class APIAuth
     {
-        public string Email { get; set; }
+        private string Email { get; set; }
         public string MasterToken { get; set; }
         public string AuthToken { get; set; }
-        public string DeviceId { get; set; }
+        private string DeviceId { get; set; }
         private string[] _scopes;
 
         UserCredential _credential;
@@ -83,13 +83,13 @@ namespace GoogleKeep
             }
 
             // Retrieve the refreshed access token
-            string accessToken = _credential.Token.AccessToken;
+            AuthToken = _credential.Token.AccessToken;
 
             // Now you have the refreshed access token, and you can use it to make authorized requests to Google APIs.
 
-            Console.WriteLine("Refreshed Access Token: " + accessToken);
+            Console.WriteLine("Refreshed Access Token: " + AuthToken);
 
-            return accessToken;
+            return AuthToken;
         }
 
         public async Task Logout()
