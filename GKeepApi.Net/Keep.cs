@@ -77,7 +77,7 @@ namespace GKeepApi.Net
                 DeviceId,
                 service: _scopes,
                 app: "com.google.android.keep",
-                client_sig: "38918a453d07199354f8b19af05ec6562ced5788"
+                clientSig: "38918a453d07199354f8b19af05ec6562ced5788"
             );
 
             // Bail if no token was returned.
@@ -106,14 +106,14 @@ namespace GKeepApi.Net
     {
         private const int RETRY_CNT = 2;
         private readonly HttpClient _httpClient = new HttpClient();
-        protected readonly string _base_url;
+        protected readonly string _baseUrl;
         private APIAuth _auth;
 
         readonly string _version = "0.14.2";
 
-        public API(string base_url, APIAuth auth = null)
+        public API(string baseUrl, APIAuth auth = null)
         {
-            _base_url = base_url;
+            _baseUrl = baseUrl;
             _auth = auth;
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "x-gkeepapi/" + _version);
         }
@@ -128,12 +128,12 @@ namespace GKeepApi.Net
             _auth = auth;
         }
 
-        public async Task<Dictionary<string, object>> Send(Dictionary<string, object> req_kwargs)
+        public async Task<Dictionary<string, object>> Send(Dictionary<string, object> reqKwargs)
         {
             int i = 0;
             while (true)
             {
-                var response = await _Send(req_kwargs);
+                var response = await _Send(reqKwargs);
                 var content = await response.Content.ReadAsStringAsync();
                 var responseData = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
 
@@ -161,24 +161,24 @@ namespace GKeepApi.Net
             }
         }
 
-        protected async Task<HttpResponseMessage> _Send(Dictionary<string, object> req_kwargs)
+        protected async Task<HttpResponseMessage> _Send(Dictionary<string, object> reqKwargs)
         {
-            var auth_token = _auth.AuthToken;
-            if (auth_token == null)
+            var authToken = _auth.AuthToken;
+            if (authToken == null)
             {
                 throw new LoginException("Not logged in");
             }
 
-            if (!req_kwargs.ContainsKey("headers"))
+            if (!reqKwargs.ContainsKey("headers"))
             {
-                req_kwargs["headers"] = new Dictionary<string, object>();
+                reqKwargs["headers"] = new Dictionary<string, object>();
             }
 
-            var headers = (Dictionary<string, object>)req_kwargs["headers"];
-            headers["Authorization"] = "OAuth " + auth_token;
+            var headers = (Dictionary<string, object>)reqKwargs["headers"];
+            headers["Authorization"] = "OAuth " + authToken;
 
-            var method = (string)req_kwargs["method"];
-            var url = (string)req_kwargs["url"];
+            var method = (string)reqKwargs["method"];
+            var url = (string)reqKwargs["url"];
 
             if (method == "GET")
             {
@@ -186,9 +186,9 @@ namespace GKeepApi.Net
             }
             else if (method == "POST")
             {
-                if (req_kwargs.ContainsKey("json"))
+                if (reqKwargs.ContainsKey("json"))
                 {
-                    var jsonBody = JsonSerializer.Serialize(req_kwargs["json"]);
+                    var jsonBody = JsonSerializer.Serialize(reqKwargs["json"]);
                     var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                     return await _httpClient.PostAsync(url, content);
                 }
@@ -202,12 +202,12 @@ namespace GKeepApi.Net
     {
         private const string API_URL = "https://www.googleapis.com/notes/v1/";
 
-        private readonly string _session_id;
+        private readonly string _sessionId;
 
         public KeepAPI(APIAuth auth = null) : base(API_URL, auth)
         {
-            var create_time = DateTime.Now;
-            _session_id = GenerateId(create_time);
+            var createTime = DateTime.Now;
+            _sessionId = GenerateId(createTime);
         }
 
         private static string GenerateId(DateTime tz)
@@ -215,7 +215,7 @@ namespace GKeepApi.Net
             return "s--" + ((long)(tz - new DateTime(1970, 1, 1)).TotalMilliseconds) + "--" + new Random().Next(1000000000, int.MaxValue);
         }
 
-        public async Task<Dictionary<string, object>> Changes(string target_version = null, List<Dictionary<string, object>> nodes = null, List<Dictionary<string, object>> labels = null)
+        public async Task<Dictionary<string, object>> Changes(string targetVersion = null, List<Dictionary<string, object>> nodes = null, List<Dictionary<string, object>> labels = null)
         {
             if (nodes == null)
             {
@@ -227,14 +227,14 @@ namespace GKeepApi.Net
                 labels = new List<Dictionary<string, object>>();
             }
 
-            var current_time = DateTime.Now;
-            var params1 = new Dictionary<string, object>
+            var currentTime = DateTime.Now;
+            var parameters = new Dictionary<string, object>
             {
                 { "nodes", nodes },
-                { "clientTimestamp", ((long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds).ToString() },
+                { "clientTimestamp", ((long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds).ToString() },
                 { "requestHeader", new Dictionary<string, object>
                     {
-                        { "clientSessionId", _session_id },
+                        { "clientSessionId", _sessionId },
                         { "clientPlatform", "ANDROID" },
                         { "clientVersion", new Dictionary<string, string>
                             {
@@ -263,14 +263,14 @@ namespace GKeepApi.Net
                 }
             };
 
-            if (target_version != null)
+            if (targetVersion != null)
             {
-                params1["targetVersion"] = target_version;
+                parameters["targetVersion"] = targetVersion;
             }
 
             if (labels.Count > 0)
             {
-                params1["userInfo"] = new Dictionary<string, object>
+                parameters["userInfo"] = new Dictionary<string, object>
                 {
                     { "labels", labels }
                 };
@@ -280,9 +280,9 @@ namespace GKeepApi.Net
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "changes" },
+                { "url", _baseUrl + "changes" },
                 { "method", "POST" },
-                { "json", params1 }
+                { "json", parameters }
             });
         }
     }
@@ -297,7 +297,7 @@ namespace GKeepApi.Net
 
         public async Task<string> Get(Blob blob)
         {
-            var url = _base_url + blob.Parent.ServerId + "/" + blob.ServerId;
+            var url = _baseUrl + blob.Parent.ServerId + "/" + blob.ServerId;
             if (blob.NodeBlob.Type == GKeepApi.Net.BlobType.Drawing)
             {
                 url += "/" + (blob.NodeBlob as NodeDrawing).DrawingInfo.DrawingId;
@@ -317,7 +317,7 @@ namespace GKeepApi.Net
     public class RemindersAPI : API
     {
         private const string API_URL = "https://www.googleapis.com/reminders/v1internal/reminders/";
-        private readonly Dictionary<string, object> _static_params = new Dictionary<string, object>
+        private readonly Dictionary<string, object> _staticParams = new Dictionary<string, object>
         {
             { "taskList", new List<Dictionary<string, string>>
                 {
@@ -346,7 +346,7 @@ namespace GKeepApi.Net
         {
         }
 
-        public async Task<Dictionary<string, object>> Create(string node_id, string node_server_id, DateTime dtime)
+        public async Task<Dictionary<string, object>> Create(string nodeId, string nodeServerId, DateTime dtime)
         {
             var parameters = new Dictionary<string, object>();
             parameters["task"] = new Dictionary<string, object>
@@ -371,8 +371,8 @@ namespace GKeepApi.Net
                         { "keepExtension", new Dictionary<string, string>
                             {
                                 { "reminderVersion", "V2" },
-                                { "clientNoteId", node_id },
-                                { "serverNoteId", node_server_id }
+                                { "clientNoteId", nodeId },
+                                { "serverNoteId", nodeServerId }
                             }
                         }
                     }
@@ -380,18 +380,18 @@ namespace GKeepApi.Net
             };
             parameters["taskId"] = new Dictionary<string, object>
             {
-                { "clientAssignedId", "KEEP/v2/" + node_server_id }
+                { "clientAssignedId", "KEEP/v2/" + nodeServerId }
             };
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "create" },
+                { "url", _baseUrl + "create" },
                 { "method", "POST" },
                 { "json", parameters }
             });
         }
 
-        public async Task<Dictionary<string, object>> Update(string node_id, string node_server_id, DateTime dtime)
+        public async Task<Dictionary<string, object>> Update(string nodeId, string nodeServerId, DateTime dtime)
         {
             var parameters = new Dictionary<string, object>();
             parameters["newTask"] = new Dictionary<string, object>
@@ -416,8 +416,8 @@ namespace GKeepApi.Net
                         { "keepExtension", new Dictionary<string, string>
                             {
                                 { "reminderVersion", "V2" },
-                                { "clientNoteId", node_id },
-                                { "serverNoteId", node_server_id }
+                                { "clientNoteId", nodeId },
+                                { "serverNoteId", nodeServerId }
                             }
                         }
                     }
@@ -425,7 +425,7 @@ namespace GKeepApi.Net
             };
             parameters["taskId"] = new Dictionary<string, object>
             {
-                { "clientAssignedId", "KEEP/v2/" + node_server_id }
+                { "clientAssignedId", "KEEP/v2/" + nodeServerId }
             };
             parameters["updateMask"] = new Dictionary<string, object>
             {
@@ -442,13 +442,13 @@ namespace GKeepApi.Net
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "update" },
+                { "url", _baseUrl + "update" },
                 { "method", "POST" },
                 { "json", parameters }
             });
         }
 
-        public async Task<Dictionary<string, object>> Delete(string node_server_id)
+        public async Task<Dictionary<string, object>> Delete(string nodeServerId)
         {
             var parameters = new Dictionary<string, object>
             {
@@ -460,7 +460,7 @@ namespace GKeepApi.Net
                                 {
                                     { "taskId", new List<Dictionary<string, string>>
                                         {
-                                            new Dictionary<string, string> { { "clientAssignedId", "KEEP/v2/" + node_server_id } }
+                                            new Dictionary<string, string> { { "clientAssignedId", "KEEP/v2/" + nodeServerId } }
                                         }
                                     }
                                 }
@@ -472,7 +472,7 @@ namespace GKeepApi.Net
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "batchmutate" },
+                { "url", _baseUrl + "batchmutate" },
                 { "method", "POST" },
                 { "json", parameters }
             });
@@ -480,7 +480,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> List(bool master = true)
         {
-            var parameters = new Dictionary<string, object>(_static_params);
+            var parameters = new Dictionary<string, object>(_staticParams);
 
             if (master)
             {
@@ -493,9 +493,9 @@ namespace GKeepApi.Net
             }
             else
             {
-                var current_time = DateTime.Now;
-                var start_time = (long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds - (365L * 24L * 60L * 60L) * 1000L;
-                var end_time = (long)(current_time - new DateTime(1970, 1, 1)).TotalMilliseconds + (24L * 60L * 60L) * 1000L;
+                var currentTime = DateTime.Now;
+                var startTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds - (365L * 24L * 60L * 60L) * 1000L;
+                var endTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds + (24L * 60L * 60L) * 1000L;
 
                 parameters["recurrenceOptions"] = new Dictionary<string, object>
                 {
@@ -505,31 +505,31 @@ namespace GKeepApi.Net
                 parameters["includeArchived"] = false;
                 parameters["includeCompleted"] = false;
                 parameters["includeDeleted"] = false;
-                parameters["dueAfterMs"] = start_time;
-                parameters["dueBeforeMs"] = end_time;
+                parameters["dueAfterMs"] = startTime;
+                parameters["dueBeforeMs"] = endTime;
                 parameters["recurrenceId"] = new List<object>();
             }
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "list" },
+                { "url", _baseUrl + "list" },
                 { "method", "POST" },
                 { "json", parameters }
             });
         }
 
-        public async Task<Dictionary<string, object>> History(string storage_version)
+        public async Task<Dictionary<string, object>> History(string storageVersion)
         {
             var parameters = new Dictionary<string, object>
             {
-                { "storageVersion", storage_version },
+                { "storageVersion", storageVersion },
                 { "includeSnoozePresetUpdates", true }
             };
-            parameters = parameters.Concat(_static_params).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            parameters = parameters.Concat(_staticParams).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "history" },
+                { "url", _baseUrl + "history" },
                 { "method", "POST" },
                 { "json", parameters }
             });
@@ -540,7 +540,7 @@ namespace GKeepApi.Net
             var parameters = new Dictionary<string, object>();
             return await Send(new Dictionary<string, object>
             {
-                { "url", _base_url + "update" },
+                { "url", _baseUrl + "update" },
                 { "method", "POST" },
                 { "json", parameters }
             });
@@ -598,15 +598,15 @@ namespace GKeepApi.Net
             return firstMacAddress;
         }
 
-        public async Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        public async Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
             var auth = new APIAuth(OAUTH_SCOPES);
-            if (device_id == null)
+            if (deviceId == null)
             {
-                device_id = GetMac();
+                deviceId = GetMac();
             }
 
-            var ret = auth.Login(email, password, device_id);
+            var ret = auth.Login(email, password, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -615,15 +615,15 @@ namespace GKeepApi.Net
             return ret;
         }
 
-        public async Task<bool> Resume(string email = null, string master_token = null, Dictionary<string, object> state = null, bool sync = true, string device_id = null)
+        public async Task<bool> Resume(string email = null, string masterToken = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
             var auth = new APIAuth(OAUTH_SCOPES);
-            if (device_id == null)
+            if (deviceId == null)
             {
-                device_id = GetMac();
+                deviceId = GetMac();
             }
 
-            var ret = auth.Load(email, master_token, device_id);
+            var ret = auth.Load(email, masterToken, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -689,9 +689,9 @@ namespace GKeepApi.Net
             _keep_version = state["keep_version"].ToString();
         }
 
-        public Node Get(string node_id)
+        public Node Get(string nodeId)
         {
-            return _nodes[Root.ID].Get(node_id) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(node_id));
+            return _nodes[Root.ID].Get(nodeId) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(nodeId));
         }
 
         public void Add(Node node)
@@ -783,30 +783,30 @@ namespace GKeepApi.Net
 
         public Label FindLabel(object query, bool create = false)
         {
-            var is_str = query is string;
-            var name = is_str ? (string)query : null;
-            query = is_str ? ((string)query).ToLower() : null;
+            var isStr = query is string;
+            var name = isStr ? (string)query : null;
+            query = isStr ? ((string)query).ToLower() : null;
 
             foreach (var label in _labels.Values)
             {
-                if ((is_str && query == label.Name.ToLower()) ||
+                if ((isStr && query == label.Name.ToLower()) ||
                     (query is Regex regex && regex.IsMatch(label.Name)))
                 {
                     return label;
                 }
             }
 
-            return create && is_str ? CreateLabel(name) : null;
+            return create && isStr ? CreateLabel(name) : null;
         }
 
-        public Label GetLabel(string label_id)
+        public Label GetLabel(string labelId)
         {
-            return _labels.GetValueOrDefault(label_id);
+            return _labels.GetValueOrDefault(labelId);
         }
 
-        public void DeleteLabel(string label_id)
+        public void DeleteLabel(string labelId)
         {
-            if (_labels.TryGetValue(label_id, out var label))
+            if (_labels.TryGetValue(labelId, out var label))
             {
                 label.Delete();
                 foreach (var node in All().OfType<TopLevelNode>())
@@ -854,7 +854,7 @@ namespace GKeepApi.Net
 
                 bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
                 var changes = await _keep_api.Changes(
-                    target_version: _keep_version,
+                    targetVersion: _keep_version,
                     nodes: FindDirtyNodes().Select(n => n.Save()).ToList(),
                     labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
                 );
@@ -1065,7 +1065,7 @@ namespace GKeepApi.Net
             }
         }
 
-        private static readonly Dictionary<NodeType, Type> _type_map = new Dictionary<NodeType, Type>
+        private static readonly Dictionary<NodeType, Type> _typeMap = new Dictionary<NodeType, Type>
         {
             { NodeType.Note, typeof(Note) },
             { NodeType.List, typeof(List) },
@@ -1080,7 +1080,7 @@ namespace GKeepApi.Net
             {
                 if (NodeType.TryFromName(_typeStr, out NodeType _type))
                 {
-                    if (_type_map.TryGetValue(_type, out Type ncls))
+                    if (_typeMap.TryGetValue(_type, out Type ncls))
                     {
                         node = (Node)Activator.CreateInstance(ncls);
                         node.Load(raw);
