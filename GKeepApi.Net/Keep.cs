@@ -552,39 +552,39 @@ namespace GKeepApi.Net
         // OAuth scopes
         private readonly string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
 
-        private readonly KeepAPI _keep_api;
-        private readonly RemindersAPI _reminders_api;
-        private readonly MediaAPI _media_api;
-        private string _keep_version;
-        private string _reminder_version;
+        private readonly KeepAPI _keepApi;
+        private readonly RemindersAPI _remindersApi;
+        private readonly MediaAPI _mediaApi;
+        private string _keepVersion;
+        private string _reminderVersion;
         private readonly Dictionary<string, Label> _labels;
         private readonly Dictionary<string, Node> _nodes;
-        private readonly Dictionary<string, string> _sid_map;
+        private readonly Dictionary<string, string> _sidMap;
 
         public Keep()
         {
-            _keep_api = new KeepAPI();
-            _reminders_api = new RemindersAPI();
-            _media_api = new MediaAPI();
-            _keep_version = null;
-            _reminder_version = null;
+            _keepApi = new KeepAPI();
+            _remindersApi = new RemindersAPI();
+            _mediaApi = new MediaAPI();
+            _keepVersion = null;
+            _reminderVersion = null;
             _labels = new Dictionary<string, Label>();
             _nodes = new Dictionary<string, Node>();
-            _sid_map = new Dictionary<string, string>();
+            _sidMap = new Dictionary<string, string>();
 
             Clear();
         }
 
         private void Clear()
         {
-            _keep_version = null;
-            _reminder_version = null;
+            _keepVersion = null;
+            _reminderVersion = null;
             _labels.Clear();
             _nodes.Clear();
-            _sid_map.Clear();
+            _sidMap.Clear();
 
-            var root_node = new Root();
-            _nodes[Root.ID] = root_node;
+            var rootNode = new Root();
+            _nodes[Root.ID] = rootNode;
         }
 
         string GetMac()
@@ -634,14 +634,14 @@ namespace GKeepApi.Net
 
         public string GetMasterToken()
         {
-            return _keep_api.GetAuth().MasterToken;
+            return _keepApi.GetAuth().MasterToken;
         }
 
         private async Task Load(APIAuth auth, Dictionary<string, object> state = null, bool sync = true)
         {
-            _keep_api.SetAuth(auth);
-            _reminders_api.SetAuth(auth);
-            _media_api.SetAuth(auth);
+            _keepApi.SetAuth(auth);
+            _remindersApi.SetAuth(auth);
+            _mediaApi.SetAuth(auth);
             if (state != null)
             {
                 Restore(state);
@@ -661,23 +661,23 @@ namespace GKeepApi.Net
                 nodes.AddRange(node.Children.Values);
             }
 
-            var serialized_labels = new List<Dictionary<string, object>>();
+            var serializedLabels = new List<Dictionary<string, object>>();
             foreach (var label in Labels())
             {
-                serialized_labels.Add(label.Save(false));
+                serializedLabels.Add(label.Save(false));
             }
 
-            var serialized_nodes = new List<Dictionary<string, object>>();
+            var serializedNodes = new List<Dictionary<string, object>>();
             foreach (var node in nodes)
             {
-                serialized_nodes.Add(node.Save(false));
+                serializedNodes.Add(node.Save(false));
             }
 
             return new Dictionary<string, object>
             {
-                { "keep_version", _keep_version },
-                { "labels", serialized_labels },
-                { "nodes", serialized_nodes }
+                { "keep_version", _keepVersion },
+                { "labels", serializedLabels },
+                { "nodes", serializedNodes }
             };
         }
 
@@ -686,12 +686,12 @@ namespace GKeepApi.Net
             Clear();
             ParseUserInfo(new Dictionary<string, object> { { "labels", state["labels"] } });
             ParseNodes((List<Dictionary<string, object>>)state["nodes"]);
-            _keep_version = state["keep_version"].ToString();
+            _keepVersion = state["keep_version"].ToString();
         }
 
         public Node Get(string nodeId)
         {
-            return _nodes[Root.ID].Get(nodeId) ?? _nodes.GetValueOrDefault(_sid_map.GetValueOrDefault(nodeId));
+            return _nodes[Root.ID].Get(nodeId) ?? _nodes.GetValueOrDefault(_sidMap.GetValueOrDefault(nodeId));
         }
 
         public void Add(Node node)
@@ -823,7 +823,7 @@ namespace GKeepApi.Net
 
         public async Task<string> GetMediaLink(Blob blob)
         {
-            return await _media_api.Get(blob);
+            return await _mediaApi.Get(blob);
         }
 
         public IEnumerable<TopLevelNode> All()
@@ -850,11 +850,11 @@ namespace GKeepApi.Net
         {
             while (true)
             {
-                Console.WriteLine($"Starting keep sync: {_keep_version}");
+                Console.WriteLine($"Starting keep sync: {_keepVersion}");
 
                 bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
-                var changes = await _keep_api.Changes(
-                    targetVersion: _keep_version,
+                var changes = await _keepApi.Changes(
+                    targetVersion: _keepVersion,
                     nodes: FindDirtyNodes().Select(n => n.Save()).ToList(),
                     labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
                 );
@@ -879,8 +879,8 @@ namespace GKeepApi.Net
                     ParseNodes(nodes);
                 }
 
-                _keep_version = changes["toVersion"].ToString();
-                Console.WriteLine($"Finishing sync: {_keep_version}");
+                _keepVersion = changes["toVersion"].ToString();
+                Console.WriteLine($"Finishing sync: {_keepVersion}");
 
                 if (!changes["truncated"].Equals(true))
                 {
@@ -908,7 +908,7 @@ namespace GKeepApi.Net
                     if (rawNode.ContainsKey("parentId"))
                     {
                         node.Load(rawNode);
-                        _sid_map[node.ServerId] = node.Id;
+                        _sidMap[node.ServerId] = node.Id;
                         Console.WriteLine($"Updated node: {rawNode["id"]}");
                     }
                     else
@@ -922,7 +922,7 @@ namespace GKeepApi.Net
                     if (node != null)
                     {
                         _nodes[rawNode["id"].ToString()] = node;
-                        _sid_map[node.ServerId] = node.Id;
+                        _sidMap[node.ServerId] = node.Id;
                         createdNodes.Add(node);
                         Console.WriteLine($"Created node: {rawNode["id"]}");
                     }
@@ -963,7 +963,7 @@ namespace GKeepApi.Net
             {
                 node.Parent.Remove(node);
                 _nodes.Remove(node.Id);
-                _sid_map.Remove(node.ServerId);
+                _sidMap.Remove(node.ServerId);
                 Console.WriteLine($"Deleted node: {node.Id}");
             }
 

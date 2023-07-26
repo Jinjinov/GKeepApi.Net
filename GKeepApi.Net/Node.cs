@@ -999,10 +999,10 @@ namespace GKeepApi.Net
             get { return Timestamps.Deleted != null && Timestamps.Deleted > NodeTimestamps.IntToDt(0); }
         }
 
-        public Node Get(string node_id)
+        public Node Get(string nodeId)
         {
             // Get child node with the given ID.
-            return this._children.ContainsKey(node_id) ? this._children[node_id] : null;
+            return this._children.ContainsKey(nodeId) ? this._children[nodeId] : null;
         }
 
         public Node Append(Node node, bool dirty = true)
@@ -1157,9 +1157,9 @@ namespace GKeepApi.Net
 
         public ListItem GetTextNode()
         {
-            foreach (var child_node in this.Children.Values)
+            foreach (var childNode in this.Children.Values)
             {
-                if (child_node is ListItem listItem)
+                if (childNode is ListItem listItem)
                 {
                     return listItem;
                 }
