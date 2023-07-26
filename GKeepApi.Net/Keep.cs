@@ -1,6 +1,4 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Util;
-using Google.Apis.Util.Store;
+﻿using GPSOAuth.Net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +7,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -19,95 +16,89 @@ namespace GKeepApi.Net
 {
     public class APIAuth
     {
-        private string Email { get; set; }
+        public string Email { get; set; }
         public string MasterToken { get; set; }
         public string AuthToken { get; set; }
-        private string DeviceId { get; set; }
-        private string[] _scopes;
+        public string DeviceId { get; set; }
+        private readonly string[] _scopes;
 
-        UserCredential _credential;
-
-        // Path to a directory where the user's credentials will be stored (can be a temporary directory)
-        readonly string _credentialPath = "GKeepApi.Net";
+        OAuth _gPSOAuth = new OAuth();
 
         public APIAuth(string[] scopes)
         {
             _scopes = scopes;
         }
 
-        public async Task<bool> Login(string email, string password, string deviceId)
+        public bool Login(string email, string password, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
 
-            //GoogleDriveClientSecrets googleDriveClientSecrets = new GoogleDriveClientSecrets();
+            // Obtain a master token.
+            var res = _gPSOAuth.PerformMasterLogin(Email, password, DeviceId);
 
-            // Create the credentials object
-            _credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                new ClientSecrets(),
-                _scopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore(_credentialPath));
+            // Bail if browser login is required.
+            if (res.ContainsKey("Error") && res["Error"] == "NeedsBrowser")
+            {
+                throw new BrowserLoginRequiredException(res["Url"], res["Error"]);
+            }
+
+            // Bail if no token was returned.
+            if (!res.ContainsKey("Token"))
+            {
+                throw new LoginException(res.ContainsKey("Error") ? res["Error"] : null, new Exception(res.ContainsKey("ErrorDetail") ? res["ErrorDetail"] : null));
+            }
+
+            MasterToken = res["Token"];
 
             // Obtain an OAuth token.
-            await Refresh();
-
+            Refresh();
             return true;
         }
 
-        public async Task<bool> Load(string email, string masterToken, string deviceId)
+        public bool Load(string email, string masterToken, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
             MasterToken = masterToken;
 
             // Obtain an OAuth token.
-            await Refresh();
-
+            Refresh();
             return true;
         }
 
-        public async Task<string> Refresh()
+        public string Refresh()
         {
-            // Check if the access token needs to be refreshed
-            if (_credential.Token.IsExpired(SystemClock.Default))
+            // Obtain an OAuth token with the necessary scopes by pretending to be
+            // the keep android client.
+            var res = _gPSOAuth.PerformOAuth(
+                Email,
+                MasterToken,
+                DeviceId,
+                service: _scopes,
+                app: "com.google.android.keep",
+                client_sig: "38918a453d07199354f8b19af05ec6562ced5788"
+            );
+
+            // Bail if no token was returned.
+            if (!res.ContainsKey("Auth"))
             {
-                // Refresh the access token
-                bool success = await _credential.RefreshTokenAsync(CancellationToken.None);
-                if (!success)
+                if (!res.ContainsKey("Token"))
                 {
-                    Console.WriteLine("Failed to refresh access token.");
-                    return null;
+                    throw new LoginException(res.ContainsKey("Error") ? res["Error"] : null);
                 }
             }
 
-            // Retrieve the refreshed access token
-            AuthToken = _credential.Token.AccessToken;
-
-            // Now you have the refreshed access token, and you can use it to make authorized requests to Google APIs.
-
-            Console.WriteLine("Refreshed Access Token: " + AuthToken);
-
+            AuthToken = res["Auth"];
             return AuthToken;
         }
 
-        public async Task Logout()
+        public void Logout()
         {
-            try
-            {
-                // Revoke the access token to invalidate it
-                await _credential.RevokeTokenAsync(CancellationToken.None);
-
-                // Clear the stored user credentials from the FileDataStore
-                await new FileDataStore(_credentialPath, true).ClearAsync();
-
-                Console.WriteLine("Logout successful.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Logout failed: " + ex.Message);
-            }
+            MasterToken = null;
+            AuthToken = null;
+            Email = null;
+            DeviceId = null;
         }
     }
 
@@ -163,7 +154,7 @@ namespace GKeepApi.Net
 
                 Console.WriteLine("Refreshing access token");
 
-                await _auth.Refresh();
+                _auth.Refresh();
 
                 i++;
             }
@@ -636,7 +627,7 @@ namespace GKeepApi.Net
                 device_id = GetMac();
             }
 
-            var ret = await auth.Login(email, password, device_id);
+            var ret = auth.Login(email, password, device_id);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -653,7 +644,7 @@ namespace GKeepApi.Net
                 device_id = GetMac();
             }
 
-            var ret = await auth.Load(email, master_token, device_id);
+            var ret = auth.Load(email, master_token, device_id);
             if (ret)
             {
                 await Load(auth, state, sync);
