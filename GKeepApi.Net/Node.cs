@@ -177,12 +177,12 @@ namespace GKeepApi.Net
 
         protected virtual void _load(Dictionary<string, object> raw)
         {
-            _dirty = raw.TryGetValue("_dirty", out var dirtyValue) && Convert.ToBoolean(dirtyValue);
+            _dirty = raw.TryGetValue("_dirty", out object? dirtyValue) && Convert.ToBoolean(dirtyValue);
         }
 
         public virtual Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = new Dictionary<string, object>();
+            Dictionary<string, object> ret = new Dictionary<string, object>();
             if (clean)
                 _dirty = false;
             else
@@ -220,7 +220,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = new Dictionary<string, object>();
+            Dictionary<string, object> ret = new Dictionary<string, object>();
             if (Id != null)
                 ret = base.Save(clean);
             if (Id != null)
@@ -245,7 +245,7 @@ namespace GKeepApi.Net
         protected override void _load(Dictionary<string, object> raw)
         {
             base._load(raw);
-            var webLink = raw["webLink"] as Dictionary<string, object>;
+            Dictionary<string, object>? webLink = raw["webLink"] as Dictionary<string, object>;
             _title = webLink["title"].ToString();
             _url = webLink["url"].ToString();
             _imageUrl = webLink.ContainsKey("imageUrl") ? webLink["imageUrl"].ToString() : _imageUrl;
@@ -255,7 +255,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["webLink"] = new Dictionary<string, object>
             {
                 { "title", _title },
@@ -334,7 +334,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["topicCategory"] = new Dictionary<string, object>
             {
                 { "category", _category.ToString() }
@@ -369,7 +369,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["taskAssist"] = new Dictionary<string, object>
             {
                 { "suggestType", _suggest }
@@ -398,11 +398,11 @@ namespace GKeepApi.Net
             _entries.Clear();
             if (raw.ContainsKey("context"))
             {
-                var context = raw["context"] as Dictionary<string, object>;
-                foreach (var pair in context)
+                Dictionary<string, object>? context = raw["context"] as Dictionary<string, object>;
+                foreach (KeyValuePair<string, object> pair in context)
                 {
-                    var key = pair.Key;
-                    var entry = pair.Value;
+                    string key = pair.Key;
+                    object entry = pair.Value;
                     _entries[key] = NodeAnnotations.FromJson(new Dictionary<string, object> { { key, entry } });
                 }
             }
@@ -410,8 +410,8 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
-            var context = _entries.Values.Select(entry => entry.Save(clean)).SelectMany(dict => dict).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            Dictionary<string, object> ret = base.Save(clean);
+            Dictionary<string, object> context = _entries.Values.Select(entry => entry.Save(clean)).SelectMany(dict => dict).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             ret["context"] = context;
             return ret;
         }
@@ -428,7 +428,7 @@ namespace GKeepApi.Net
 
         public bool RemoveEntry(string key)
         {
-            var result = _entries.Remove(key);
+            bool result = _entries.Remove(key);
             if (result)
                 _dirty = true;
             return result;
@@ -461,11 +461,11 @@ namespace GKeepApi.Net
             if (!raw.ContainsKey("annotations"))
                 return;
 
-            foreach (var rawAnnotation in raw["annotations"] as List<object>)
+            foreach (object rawAnnotation in raw["annotations"] as List<object>)
             {
                 if (rawAnnotation is Dictionary<string, object> rawDict)
                 {
-                    var annotation = FromJson(rawDict);
+                    Annotation annotation = FromJson(rawDict);
                     if (annotation != null)
                         _annotations[annotation.Id] = annotation;
                 }
@@ -474,12 +474,12 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["kind"] = "notes#annotationsGroup";
             if (_annotations.Count > 0)
             {
-                var annotationsList = new List<Dictionary<string, object>>();
-                foreach (var annotation in _annotations.Values)
+                List<Dictionary<string, object>> annotationsList = new List<Dictionary<string, object>>();
+                foreach (Annotation annotation in _annotations.Values)
                 {
                     annotationsList.Add(annotation.Save(clean));
                 }
@@ -490,7 +490,7 @@ namespace GKeepApi.Net
 
         private Category GetCategoryNode()
         {
-            foreach (var annotation in _annotations.Values)
+            foreach (Annotation annotation in _annotations.Values)
             {
                 if (annotation is Category categoryAnnotation)
                     return categoryAnnotation;
@@ -502,12 +502,12 @@ namespace GKeepApi.Net
         {
             get
             {
-                var node = GetCategoryNode();
+                Category node = GetCategoryNode();
                 return node?.CategoryValue;
             }
             set
             {
-                var node = GetCategoryNode();
+                Category? node = GetCategoryNode();
                 if (value == null)
                 {
                     if (node != null)
@@ -530,8 +530,8 @@ namespace GKeepApi.Net
         {
             get
             {
-                var links = new List<WebLink>();
-                foreach (var annotation in _annotations.Values)
+                List<WebLink> links = new List<WebLink>();
+                foreach (Annotation annotation in _annotations.Values)
                 {
                     if (annotation is WebLink webLink)
                         links.Add(webLink);
@@ -588,7 +588,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["kind"] = "notes#timestamps";
             ret["created"] = DtToStr(Created);
             if (Deleted != null)
@@ -638,7 +638,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["newListItemPlacement"] = NewListItemPlacement;
             ret["graveyardState"] = GraveyardState;
             ret["checkedListItemsPolicy"] = CheckedListItemsPolicy;
@@ -665,7 +665,7 @@ namespace GKeepApi.Net
             }
 
             _collaborators.Clear();
-            foreach (var collaborator in collaboratorsRaw)
+            foreach (Dictionary<string, object> collaborator in collaboratorsRaw)
             {
                 if (collaborator.ContainsKey("email") && collaborator["email"] is string email)
                 {
@@ -673,7 +673,7 @@ namespace GKeepApi.Net
                 }
             }
 
-            foreach (var collaborator in requestsRaw)
+            foreach (Dictionary<string, object> collaborator in requestsRaw)
             {
                 if (collaborator.ContainsKey("email") && collaborator["email"] is string email && collaborator.ContainsKey("type") && collaborator["type"] is string type)
                 {
@@ -684,14 +684,14 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = new Dictionary<string, object>();
-            var collaborators = new List<Dictionary<string, object>>();
-            var requests = new List<Dictionary<string, object>>();
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+            List<Dictionary<string, object>> collaborators = new List<Dictionary<string, object>>();
+            List<Dictionary<string, object>> requests = new List<Dictionary<string, object>>();
 
-            foreach (var pair in _collaborators)
+            foreach (KeyValuePair<string, ISmartEnum> pair in _collaborators)
             {
-                var email = pair.Key;
-                var action = pair.Value;
+                string email = pair.Key;
+                ISmartEnum action = pair.Value;
                 if (action is ShareRequestValue requestValue)
                 {
                     requests.Add(new Dictionary<string, object>
@@ -742,11 +742,11 @@ namespace GKeepApi.Net
 
         public List<string> All()
         {
-            var collaboratorsList = new List<string>();
-            foreach (var pair in _collaborators)
+            List<string> collaboratorsList = new List<string>();
+            foreach (KeyValuePair<string, ISmartEnum> pair in _collaborators)
             {
-                var email = pair.Key;
-                var action = pair.Value;
+                string email = pair.Key;
+                ISmartEnum action = pair.Value;
                 if (action == RoleValue.Owner || action == RoleValue.User || action == ShareRequestValue.Add)
                     collaboratorsList.Add(email);
             }
@@ -775,11 +775,11 @@ namespace GKeepApi.Net
                 _dirty = false;
             }
             _labels.Clear();
-            foreach (var rawLabel in raw)
+            foreach (KeyValuePair<string, object> rawLabel in raw)
             {
                 if (rawLabel.Value is Dictionary<string, object> labelDict)
                 {
-                    var label = new Label();
+                    Label label = new Label();
                     label.Load(labelDict);
                     _labels[rawLabel.Key] = label;
                 }
@@ -788,12 +788,12 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = new Dictionary<string, object>();
-            foreach (var pair in _labels)
+            Dictionary<string, object> ret = new Dictionary<string, object>();
+            foreach (KeyValuePair<string, Label> pair in _labels)
             {
-                var labelId = pair.Key;
-                var label = pair.Value;
-                var labelDict = label.Save(clean);
+                string labelId = pair.Key;
+                Label label = pair.Value;
+                Dictionary<string, object> labelDict = label.Save(clean);
                 ret[labelId] = labelDict.Count == 0 ? null : labelDict;
             }
 
@@ -822,14 +822,14 @@ namespace GKeepApi.Net
 
         public Label Get(string labelId)
         {
-            _labels.TryGetValue(labelId, out var label);
+            _labels.TryGetValue(labelId, out Label? label);
             return label;
         }
 
         public List<Label> All()
         {
-            var labelList = new List<Label>();
-            foreach (var label in _labels.Values)
+            List<Label> labelList = new List<Label>();
+            foreach (Label label in _labels.Values)
             {
                 if (label != null)
                     labelList.Add(label);
@@ -1086,9 +1086,9 @@ namespace GKeepApi.Net
             ret["isArchived"] = this._archived;
             ret["isPinned"] = this._pinned;
             ret["title"] = this._title;
-            var labels = this.Labels.Save(clean);
+            Dictionary<string, object> labels = this.Labels.Save(clean);
             //var (collaborators, requests) = this.Collaborators.Save(clean);
-            var dict = this.Collaborators.Save(clean);
+            Dictionary<string, object> dict = this.Collaborators.Save(clean);
             if (labels.Count > 0)
                 ret["labelIds"] = labels;
             ret["collaborators"] = dict.Keys;
@@ -1157,7 +1157,7 @@ namespace GKeepApi.Net
 
         public ListItem GetTextNode()
         {
-            foreach (var childNode in this.Children.Values)
+            foreach (Node childNode in this.Children.Values)
             {
                 if (childNode is ListItem listItem)
                 {
@@ -1172,12 +1172,12 @@ namespace GKeepApi.Net
         {
             get
             {
-                var node = this.GetTextNode();
+                ListItem node = this.GetTextNode();
                 return node != null ? node.Text : base.Text;
             }
             set
             {
-                var node = this.GetTextNode();
+                ListItem? node = this.GetTextNode();
                 if (node == null)
                 {
                     node = new ListItem(this.Id);
@@ -1201,19 +1201,19 @@ namespace GKeepApi.Net
 
         public ListItem Add(string text, bool check = false, int? sort = null)
         {
-            var node = new ListItem(this.Id, this.ServerId);
+            ListItem node = new ListItem(this.Id, this.ServerId);
             node.Checked = check;
             node.Text = text;
 
-            var items = this.Items;
+            List<ListItem> items = this.Items;
             if (sort.HasValue)
             {
                 node.Sort = sort.Value;
             }
             else if (items.Count > 0)
             {
-                var func = new Func<long, long, long>((a, b) => Math.Max(a, b));
-                var delta = SORT_DELTA;
+                Func<long, long, long> func = new Func<long, long, long>((a, b) => Math.Max(a, b));
+                int delta = SORT_DELTA;
                 if (sort == NewListItemPlacementValue.Bottom)
                 {
                     func = new Func<long, long, long>((a, b) => Math.Min(a, b));
@@ -1234,7 +1234,7 @@ namespace GKeepApi.Net
         {
             static List<ListItem> SortFunc(ListItem x) => x.Items.SelectMany(item =>
             {
-                var res = new List<ListItem> { item };
+                List<ListItem> res = new List<ListItem> { item };
                 res.AddRange(SortFunc(item));
                 return res;
             }).ToList();
@@ -1251,8 +1251,8 @@ namespace GKeepApi.Net
         public void SortItems(Comparison<ListItem> comparison)
         {
             this.GetItems().Sort(comparison);
-            var sortValue = new Random().Next(1000000000, int.MaxValue);
-            foreach (var node in this.GetItems())
+            int sortValue = new Random().Next(1000000000, int.MaxValue);
+            foreach (ListItem node in this.GetItems())
             {
                 node.Sort = sortValue;
                 sortValue -= SORT_DELTA;
@@ -1312,7 +1312,7 @@ namespace GKeepApi.Net
                 throw new Exception("Item has no parent");
             }
 
-            var node = new ListItem(this.Parent.Id, this.Parent.ServerId);
+            ListItem node = new ListItem(this.Parent.Id, this.Parent.ServerId);
             node.Checked = check;
             node.Text = text;
 
@@ -1324,8 +1324,8 @@ namespace GKeepApi.Net
                 }
                 else if (list.Items.Count > 0)
                 {
-                    var min = list.Items.Select(item => (int)item.Sort).Min();
-                    var max = list.Items.Select(item => (int)item.Sort).Max();
+                    int min = list.Items.Select(item => (int)item.Sort).Min();
+                    int max = list.Items.Select(item => (int)item.Sort).Max();
                     node.Sort = check ? max + List.SORT_DELTA : min - List.SORT_DELTA;
                 }
             }
@@ -1339,7 +1339,7 @@ namespace GKeepApi.Net
 
         public IEnumerable<ListItem> GetSortedSubitems(bool? check = null)
         {
-            foreach (var subitem in this.Children.OfType<ListItem>())
+            foreach (ListItem subitem in this.Children.OfType<ListItem>())
             {
                 if (check.HasValue && subitem.Checked != check.Value)
                 {
@@ -1348,7 +1348,7 @@ namespace GKeepApi.Net
 
                 yield return subitem;
 
-                foreach (var item in subitem.GetSortedSubitems(check))
+                foreach (ListItem item in subitem.GetSortedSubitems(check))
                 {
                     yield return item;
                 }
@@ -1414,17 +1414,17 @@ namespace GKeepApi.Net
             {
                 static int CompareSubitems(ListItem a, ListItem b)
                 {
-                    var aSort = a.ParentItem == null ? a.Sort : a.ParentItem.Sort;
-                    var bSort = b.ParentItem == null ? b.Sort : b.ParentItem.Sort;
+                    long aSort = a.ParentItem == null ? a.Sort : a.ParentItem.Sort;
+                    long bSort = b.ParentItem == null ? b.Sort : b.ParentItem.Sort;
                     if (aSort != bSort)
                     {
                         return aSort.CompareTo(bSort);
                     }
 
-                    var aSubitems = a.Items.Count == 0 ? new List<ListItem> { a } : a.Items;
-                    var bSubitems = b.Items.Count == 0 ? new List<ListItem> { b } : b.Items;
-                    var cmp = new ListItemComparer();
-                    for (var i = 0; i < Math.Max(aSubitems.Count, bSubitems.Count); i++)
+                    List<ListItem> aSubitems = a.Items.Count == 0 ? new List<ListItem> { a } : a.Items;
+                    List<ListItem> bSubitems = b.Items.Count == 0 ? new List<ListItem> { b } : b.Items;
+                    ListItemComparer cmp = new ListItemComparer();
+                    for (int i = 0; i < Math.Max(aSubitems.Count, bSubitems.Count); i++)
                     {
                         if (i >= aSubitems.Count)
                         {
@@ -1436,7 +1436,7 @@ namespace GKeepApi.Net
                             return 1;
                         }
 
-                        var res = cmp.Compare(aSubitems[i], bSubitems[i]);
+                        int res = cmp.Compare(aSubitems[i], bSubitems[i]);
                         if (res != 0)
                         {
                             return res;
@@ -1501,7 +1501,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["kind"] = "notes#blob";
             ret["type"] = Type.ToString().ToLower();
             if (!string.IsNullOrEmpty(BlobId))
@@ -1540,7 +1540,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             if (Length > 0)
             {
                 ret["length"] = Length;
@@ -1577,7 +1577,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["width"] = Width;
             ret["height"] = Height;
             ret["byte_size"] = ByteSize;
@@ -1612,7 +1612,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["extracted_text"] = ExtractedText;
             ret["extraction_status"] = ExtractionStatus;
             if (DrawingInfo != null)
@@ -1653,7 +1653,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["drawingId"] = DrawingId;
             ret["snapshotData"] = Snapshot.Save(clean);
             ret["snapshotFingerprint"] = _snapshotFingerprint;
@@ -1702,7 +1702,7 @@ namespace GKeepApi.Net
                 return null;
             }
 
-            var blob = Activator.CreateInstance(bcls) as NodeBlob;
+            NodeBlob? blob = Activator.CreateInstance(bcls) as NodeBlob;
             blob?.Load(raw);
 
             return blob;
@@ -1716,7 +1716,7 @@ namespace GKeepApi.Net
 
         public override Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             if (NodeBlob != null)
             {
                 ret["blob"] = NodeBlob.Save(clean);
@@ -1758,7 +1758,7 @@ namespace GKeepApi.Net
 
         public new Dictionary<string, object> Save(bool clean = true)
         {
-            var ret = base.Save(clean);
+            Dictionary<string, object> ret = base.Save(clean);
             ret["mainId"] = this.Id;
             ret["name"] = this._name;
             ret["timestamps"] = this.Timestamps.Save(clean);

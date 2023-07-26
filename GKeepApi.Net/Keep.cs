@@ -35,7 +35,7 @@ namespace GKeepApi.Net
             DeviceId = deviceId;
 
             // Obtain a master token.
-            var res = _gPSOAuth.PerformMasterLogin(Email, password, DeviceId);
+            Dictionary<string, string> res = _gPSOAuth.PerformMasterLogin(Email, password, DeviceId);
 
             // Bail if browser login is required.
             if (res.ContainsKey("Error") && res["Error"] == "NeedsBrowser")
@@ -71,7 +71,7 @@ namespace GKeepApi.Net
         {
             // Obtain an OAuth token with the necessary scopes by pretending to be
             // the keep android client.
-            var res = _gPSOAuth.PerformOAuth(
+            Dictionary<string, string> res = _gPSOAuth.PerformOAuth(
                 Email,
                 MasterToken,
                 DeviceId,
@@ -133,16 +133,16 @@ namespace GKeepApi.Net
             int i = 0;
             while (true)
             {
-                var response = await _Send(reqKwargs);
-                var content = await response.Content.ReadAsStringAsync();
-                var responseData = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
+                HttpResponseMessage response = await _Send(reqKwargs);
+                string content = await response.Content.ReadAsStringAsync();
+                Dictionary<string, object>? responseData = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
 
                 if (!responseData.ContainsKey("error"))
                 {
                     return responseData;
                 }
 
-                var error = (Dictionary<string, object>)responseData["error"];
+                Dictionary<string, object> error = (Dictionary<string, object>)responseData["error"];
                 if ((int)error["code"] != 401)
                 {
                     throw new APIException((int)error["code"], error.ToString());
@@ -163,7 +163,7 @@ namespace GKeepApi.Net
 
         protected async Task<HttpResponseMessage> _Send(Dictionary<string, object> reqKwargs)
         {
-            var authToken = _auth.AuthToken;
+            string authToken = _auth.AuthToken;
             if (authToken == null)
             {
                 throw new LoginException("Not logged in");
@@ -174,11 +174,11 @@ namespace GKeepApi.Net
                 reqKwargs["headers"] = new Dictionary<string, object>();
             }
 
-            var headers = (Dictionary<string, object>)reqKwargs["headers"];
+            Dictionary<string, object> headers = (Dictionary<string, object>)reqKwargs["headers"];
             headers["Authorization"] = "OAuth " + authToken;
 
-            var method = (string)reqKwargs["method"];
-            var url = (string)reqKwargs["url"];
+            string method = (string)reqKwargs["method"];
+            string url = (string)reqKwargs["url"];
 
             if (method == "GET")
             {
@@ -188,8 +188,8 @@ namespace GKeepApi.Net
             {
                 if (reqKwargs.ContainsKey("json"))
                 {
-                    var jsonBody = JsonSerializer.Serialize(reqKwargs["json"]);
-                    var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                    string jsonBody = JsonSerializer.Serialize(reqKwargs["json"]);
+                    StringContent content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                     return await _httpClient.PostAsync(url, content);
                 }
             }
@@ -206,7 +206,7 @@ namespace GKeepApi.Net
 
         public KeepAPI(APIAuth auth = null) : base(API_URL, auth)
         {
-            var createTime = DateTime.Now;
+            DateTime createTime = DateTime.Now;
             _sessionId = GenerateId(createTime);
         }
 
@@ -227,8 +227,8 @@ namespace GKeepApi.Net
                 labels = new List<Dictionary<string, object>>();
             }
 
-            var currentTime = DateTime.Now;
-            var parameters = new Dictionary<string, object>
+            DateTime currentTime = DateTime.Now;
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "nodes", nodes },
                 { "clientTimestamp", ((long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds).ToString() },
@@ -297,13 +297,13 @@ namespace GKeepApi.Net
 
         public async Task<string> Get(Blob blob)
         {
-            var url = _baseUrl + blob.Parent.ServerId + "/" + blob.ServerId;
+            string url = _baseUrl + blob.Parent.ServerId + "/" + blob.ServerId;
             if (blob.NodeBlob.Type == GKeepApi.Net.BlobType.Drawing)
             {
                 url += "/" + (blob.NodeBlob as NodeDrawing).DrawingInfo.DrawingId;
             }
 
-            var response = await _Send(new Dictionary<string, object>
+            HttpResponseMessage response = await _Send(new Dictionary<string, object>
             {
                 { "url", url },
                 { "method", "GET" },
@@ -348,7 +348,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> Create(string nodeId, string nodeServerId, DateTime dtime)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters["task"] = new Dictionary<string, object>
             {
                 { "dueDate", new Dictionary<string, object>
@@ -393,7 +393,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> Update(string nodeId, string nodeServerId, DateTime dtime)
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters["newTask"] = new Dictionary<string, object>
             {
                 { "dueDate", new Dictionary<string, object>
@@ -450,7 +450,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> Delete(string nodeServerId)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "batchedRequest", new List<Dictionary<string, object>>
                     {
@@ -480,7 +480,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> List(bool master = true)
         {
-            var parameters = new Dictionary<string, object>(_staticParams);
+            Dictionary<string, object> parameters = new Dictionary<string, object>(_staticParams);
 
             if (master)
             {
@@ -493,9 +493,9 @@ namespace GKeepApi.Net
             }
             else
             {
-                var currentTime = DateTime.Now;
-                var startTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds - (365L * 24L * 60L * 60L) * 1000L;
-                var endTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds + (24L * 60L * 60L) * 1000L;
+                DateTime currentTime = DateTime.Now;
+                long startTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds - (365L * 24L * 60L * 60L) * 1000L;
+                long endTime = (long)(currentTime - new DateTime(1970, 1, 1)).TotalMilliseconds + (24L * 60L * 60L) * 1000L;
 
                 parameters["recurrenceOptions"] = new Dictionary<string, object>
                 {
@@ -520,7 +520,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> History(string storageVersion)
         {
-            var parameters = new Dictionary<string, object>
+            Dictionary<string, object> parameters = new Dictionary<string, object>
             {
                 { "storageVersion", storageVersion },
                 { "includeSnoozePresetUpdates", true }
@@ -537,7 +537,7 @@ namespace GKeepApi.Net
 
         public async Task<Dictionary<string, object>> Update()
         {
-            var parameters = new Dictionary<string, object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             return await Send(new Dictionary<string, object>
             {
                 { "url", _baseUrl + "update" },
@@ -583,7 +583,7 @@ namespace GKeepApi.Net
             _nodes.Clear();
             _sidMap.Clear();
 
-            var rootNode = new Root();
+            Root rootNode = new Root();
             _nodes[Root.ID] = rootNode;
         }
 
@@ -600,13 +600,13 @@ namespace GKeepApi.Net
 
         public async Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
-            var auth = new APIAuth(OAUTH_SCOPES);
+            APIAuth auth = new APIAuth(OAUTH_SCOPES);
             if (deviceId == null)
             {
                 deviceId = GetMac();
             }
 
-            var ret = auth.Login(email, password, deviceId);
+            bool ret = auth.Login(email, password, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -617,13 +617,13 @@ namespace GKeepApi.Net
 
         public async Task<bool> Resume(string email = null, string masterToken = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
-            var auth = new APIAuth(OAUTH_SCOPES);
+            APIAuth auth = new APIAuth(OAUTH_SCOPES);
             if (deviceId == null)
             {
                 deviceId = GetMac();
             }
 
-            var ret = auth.Load(email, masterToken, deviceId);
+            bool ret = auth.Load(email, masterToken, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -654,21 +654,21 @@ namespace GKeepApi.Net
 
         public Dictionary<string, object> Dump()
         {
-            var nodes = new List<Node>();
-            foreach (var node in All())
+            List<Node> nodes = new List<Node>();
+            foreach (TopLevelNode node in All())
             {
                 nodes.Add(node);
                 nodes.AddRange(node.Children.Values);
             }
 
-            var serializedLabels = new List<Dictionary<string, object>>();
-            foreach (var label in Labels())
+            List<Dictionary<string, object>> serializedLabels = new List<Dictionary<string, object>>();
+            foreach (Label label in Labels())
             {
                 serializedLabels.Add(label.Save(false));
             }
 
-            var serializedNodes = new List<Dictionary<string, object>>();
-            foreach (var node in nodes)
+            List<Dictionary<string, object>> serializedNodes = new List<Dictionary<string, object>>();
+            foreach (Node node in nodes)
             {
                 serializedNodes.Add(node.Save(false));
             }
@@ -733,7 +733,7 @@ namespace GKeepApi.Net
 
         public Note CreateNote(string title = null, string text = null)
         {
-            var node = new Note();
+            Note node = new Note();
             if (title != null)
             {
                 node.Title = title;
@@ -753,14 +753,14 @@ namespace GKeepApi.Net
                 items = new List<(string, bool)>();
             }
 
-            var node = new List();
+            List node = new List();
             if (title != null)
             {
                 node.Title = title;
             }
 
-            var sort = new Random().Next(1000000000, int.MaxValue);
-            foreach (var item in items)
+            int sort = new Random().Next(1000000000, int.MaxValue);
+            foreach ((string, bool) item in items)
             {
                 node.Add(item.Item1, item.Item2, sort);
                 sort -= GKeepApi.Net.List.SORT_DELTA;
@@ -775,7 +775,7 @@ namespace GKeepApi.Net
             {
                 throw new Exception("Label exists");
             }
-            var node = new Label();
+            Label node = new Label();
             node.Name = name;
             _labels[node.Id] = node;
             return node;
@@ -783,11 +783,11 @@ namespace GKeepApi.Net
 
         public Label FindLabel(object query, bool create = false)
         {
-            var isStr = query is string;
-            var name = isStr ? (string)query : null;
+            bool isStr = query is string;
+            string? name = isStr ? (string)query : null;
             query = isStr ? ((string)query).ToLower() : null;
 
-            foreach (var label in _labels.Values)
+            foreach (Label label in _labels.Values)
             {
                 if ((isStr && query == label.Name.ToLower()) ||
                     (query is Regex regex && regex.IsMatch(label.Name)))
@@ -806,10 +806,10 @@ namespace GKeepApi.Net
 
         public void DeleteLabel(string labelId)
         {
-            if (_labels.TryGetValue(labelId, out var label))
+            if (_labels.TryGetValue(labelId, out Label? label))
             {
                 label.Delete();
-                foreach (var node in All().OfType<TopLevelNode>())
+                foreach (TopLevelNode node in All().OfType<TopLevelNode>())
                 {
                     node.Labels.Remove(label);
                 }
@@ -853,7 +853,7 @@ namespace GKeepApi.Net
                 Console.WriteLine($"Starting keep sync: {_keepVersion}");
 
                 bool labelsUpdated = _labels.Values.Any(label => label.Dirty);
-                var changes = await _keepApi.Changes(
+                Dictionary<string, object> changes = await _keepApi.Changes(
                     targetVersion: _keepVersion,
                     nodes: FindDirtyNodes().Select(n => n.Save()).ToList(),
                     labels: labelsUpdated ? _labels.Values.Select(l => l.Save(false)).ToList() : null
@@ -869,12 +869,12 @@ namespace GKeepApi.Net
                     throw new UpgradeRecommendedException("Upgrade recommended");
                 }
 
-                if (changes.TryGetValue("userInfo", out var userInfoTemp) && userInfoTemp is Dictionary<string, object> userInfo)
+                if (changes.TryGetValue("userInfo", out object? userInfoTemp) && userInfoTemp is Dictionary<string, object> userInfo)
                 {
                     ParseUserInfo(userInfo);
                 }
 
-                if (changes.TryGetValue("nodes", out var nodesTemp) && nodesTemp is List<Dictionary<string, object>> nodes)
+                if (changes.TryGetValue("nodes", out object? nodesTemp) && nodesTemp is List<Dictionary<string, object>> nodes)
                 {
                     ParseNodes(nodes);
                 }
@@ -896,15 +896,15 @@ namespace GKeepApi.Net
 
         private void ParseNodes(List<Dictionary<string, object>> raw)
         {
-            var createdNodes = new List<Node>();
-            var deletedNodes = new List<Node>();
-            var listItemNodes = new List<ListItem>();
+            List<Node> createdNodes = new List<Node>();
+            List<Node> deletedNodes = new List<Node>();
+            List<ListItem> listItemNodes = new List<ListItem>();
 
-            foreach (var rawNode in raw)
+            foreach (Dictionary<string, object> rawNode in raw)
             {
                 if (_nodes.ContainsKey(rawNode["id"].ToString()))
                 {
-                    var node = _nodes[rawNode["id"].ToString()];
+                    Node node = _nodes[rawNode["id"].ToString()];
                     if (rawNode.ContainsKey("parentId"))
                     {
                         node.Load(rawNode);
@@ -918,7 +918,7 @@ namespace GKeepApi.Net
                 }
                 else
                 {
-                    var node = FromJson(rawNode);
+                    Node node = FromJson(rawNode);
                     if (node != null)
                     {
                         _nodes[rawNode["id"].ToString()] = node;
@@ -932,13 +932,13 @@ namespace GKeepApi.Net
                     }
                 }
 
-                if (rawNode.TryGetValue("listItem", out var listItemTemp) && listItemTemp is Dictionary<string, object> listItem)
+                if (rawNode.TryGetValue("listItem", out object? listItemTemp) && listItemTemp is Dictionary<string, object> listItem)
                 {
-                    var listItemId = listItem["id"].ToString();
-                    var prevSuperListItemId = listItem["prevSuperListItemId"].ToString();
-                    var superListItemId = listItem["superListItemId"].ToString();
+                    string listItemId = listItem["id"].ToString();
+                    string prevSuperListItemId = listItem["prevSuperListItemId"].ToString();
+                    string superListItemId = listItem["superListItemId"].ToString();
 
-                    var node = _nodes[prevSuperListItemId] as ListItem;
+                    ListItem? node = _nodes[prevSuperListItemId] as ListItem;
                     if (prevSuperListItemId != superListItemId)
                     {
                         node.Dedent(listItemNodes.Last(), false);
@@ -952,14 +952,14 @@ namespace GKeepApi.Net
                 }
             }
 
-            foreach (var node in createdNodes)
+            foreach (Node node in createdNodes)
             {
-                var parent = _nodes[node.ParentId];
+                Node parent = _nodes[node.ParentId];
                 parent.Append(node, false);
                 Console.WriteLine($"Attached node: {node.Id} to {node.ParentId}");
             }
 
-            foreach (var node in deletedNodes)
+            foreach (Node node in deletedNodes)
             {
                 node.Parent.Remove(node);
                 _nodes.Remove(node.Id);
@@ -967,9 +967,9 @@ namespace GKeepApi.Net
                 Console.WriteLine($"Deleted node: {node.Id}");
             }
 
-            foreach (var node in All().OfType<TopLevelNode>())
+            foreach (TopLevelNode node in All().OfType<TopLevelNode>())
             {
-                foreach (var labelId in node.Labels.Keys)
+                foreach (string labelId in node.Labels.Keys)
                 {
                     node.Labels.Add(_labels.GetValueOrDefault(labelId));
                 }
@@ -978,13 +978,13 @@ namespace GKeepApi.Net
 
         private void ParseUserInfo(Dictionary<string, object> raw)
         {
-            var labels = raw["labels"] as List<Dictionary<string, object>>;
+            List<Dictionary<string, object>>? labels = raw["labels"] as List<Dictionary<string, object>>;
             if (labels != null)
             {
-                foreach (var label in labels)
+                foreach (Dictionary<string, object> label in labels)
                 {
-                    var labelId = label["mainId"].ToString();
-                    if (_labels.TryGetValue(labelId, out var node))
+                    string labelId = label["mainId"].ToString();
+                    if (_labels.TryGetValue(labelId, out Label? node))
                     {
                         _labels.Remove(labelId);
                         Console.WriteLine($"Updated label: {labelId}");
@@ -1000,7 +1000,7 @@ namespace GKeepApi.Net
                 }
             }
 
-            foreach (var labelId in _labels.Keys.ToList())
+            foreach (string? labelId in _labels.Keys.ToList())
             {
                 if (!labels.Any(label => label["mainId"].ToString() == labelId))
                 {
@@ -1012,19 +1012,19 @@ namespace GKeepApi.Net
 
         private List<Node> FindDirtyNodes()
         {
-            var foundIds = new Dictionary<string, object>();
-            var nodes = new List<Node> { _nodes[Root.ID] };
+            Dictionary<string, object> foundIds = new Dictionary<string, object>();
+            List<Node> nodes = new List<Node> { _nodes[Root.ID] };
 
             while (nodes.Count > 0)
             {
-                var node = nodes[0];
+                Node node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
                 nodes.AddRange(node.Children.Values);
             }
 
-            var dirtyNodes = new List<Node>();
-            foreach (var node in _nodes.Values)
+            List<Node> dirtyNodes = new List<Node>();
+            foreach (Node node in _nodes.Values)
             {
                 if (node.Dirty)
                 {
@@ -1037,18 +1037,18 @@ namespace GKeepApi.Net
 
         private void Clean()
         {
-            var foundIds = new Dictionary<string, object>();
-            var nodes = new List<Node> { _nodes[Root.ID] };
+            Dictionary<string, object> foundIds = new Dictionary<string, object>();
+            List<Node> nodes = new List<Node> { _nodes[Root.ID] };
 
             while (nodes.Count > 0)
             {
-                var node = nodes[0];
+                Node node = nodes[0];
                 nodes.RemoveAt(0);
                 foundIds[node.Id] = null;
                 nodes.AddRange(node.Children.Values);
             }
 
-            foreach (var nodeId in _nodes.Keys.ToList())
+            foreach (string? nodeId in _nodes.Keys.ToList())
             {
                 if (!foundIds.ContainsKey(nodeId))
                 {
@@ -1056,7 +1056,7 @@ namespace GKeepApi.Net
                 }
             }
 
-            foreach (var nodeId in foundIds.Keys)
+            foreach (string nodeId in foundIds.Keys)
             {
                 if (!_nodes.ContainsKey(nodeId))
                 {
