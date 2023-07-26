@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Net.NetworkInformation;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -134,7 +134,8 @@ namespace GKeepApi.Net
             while (true)
             {
                 var response = await _Send(req_kwargs);
-                var responseData = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                var content = await response.Content.ReadAsStringAsync();
+                var responseData = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
 
                 if (!responseData.ContainsKey("error"))
                 {
@@ -181,37 +182,15 @@ namespace GKeepApi.Net
 
             if (method == "GET")
             {
-                HttpRequestMessage requestMessage = new HttpRequestMessage()
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri(url),
-                };
-
-                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth_token);
-
-                return await _httpClient.SendAsync(requestMessage);
-
-                //return await _httpClient.GetAsync(url);
+                return await _httpClient.GetAsync(url);
             }
             else if (method == "POST")
             {
                 if (req_kwargs.ContainsKey("json"))
                 {
-                    HttpRequestMessage requestMessage = new HttpRequestMessage()
-                    {
-                        Method = HttpMethod.Post,
-                        RequestUri = new Uri(url),
-                    };
-
-                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth_token);
-
-                    requestMessage.Content = JsonContent.Create(req_kwargs["json"]);
-
-                    //var jsonBody = JsonConvert.SerializeObject(req_kwargs["json"]);
-                    //var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                    //return await _httpClient.PostAsync(url, content);
-
-                    return await _httpClient.SendAsync(requestMessage);
+                    var jsonBody = JsonSerializer.Serialize(req_kwargs["json"]);
+                    var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                    return await _httpClient.PostAsync(url, content);
                 }
             }
 
