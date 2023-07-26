@@ -7,17 +7,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Product>GoogleKeep</Product>
-    <PackageId>GoogleKeep</PackageId>
+    <Product>GKeepApi.Net</Product>
+    <PackageId>GKeepApi.Net</PackageId>
     <PackageVersion>0.0.0.1</PackageVersion>
     <Version>0.0.0.1</Version>
     <Authors>Jinjinov</Authors>
     <Description>Google Keep .Net API</Description>
     <Copyright>Copyright (c) Jinjinov 2022</Copyright>
-    <PackageProjectUrl>https://github.com/Jinjinov/GoogleKeep</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Jinjinov/GKeepApi.Net</PackageProjectUrl>
     <!--<PackageIcon></PackageIcon>-->
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/Jinjinov/GoogleKeep.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Jinjinov/GKeepApi.Net.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>Google Keep;API;NET Standard</PackageTags>
     <!--<PackageReleaseNotes></PackageReleaseNotes>-->

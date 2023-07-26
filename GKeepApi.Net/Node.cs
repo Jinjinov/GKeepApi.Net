@@ -6,7 +6,7 @@ using System.Linq;
 /// <summary>
 /// node.py
 /// </summary>
-namespace GoogleKeep
+namespace GKeepApi.Net
 {
     public static class DictionaryExtensions
     {

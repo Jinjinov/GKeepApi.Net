@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace GoogleKeep.Test
+namespace GKeepApi.Net.Test
 {
     class Program
     {

@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// __init__.py
 /// </summary>
-namespace GoogleKeep
+namespace GKeepApi.Net
 {
     public class APIAuth
     {
@@ -28,7 +28,7 @@ namespace GoogleKeep
         UserCredential _credential;
 
         // Path to a directory where the user's credentials will be stored (can be a temporary directory)
-        readonly string _credentialPath = "GoogleKeep";
+        readonly string _credentialPath = "GKeepApi.Net";
 
         public APIAuth(string[] scopes)
         {
@@ -40,11 +40,11 @@ namespace GoogleKeep
             Email = email;
             DeviceId = deviceId;
 
-            GoogleDriveClientSecrets googleDriveClientSecrets = new GoogleDriveClientSecrets();
+            //GoogleDriveClientSecrets googleDriveClientSecrets = new GoogleDriveClientSecrets();
 
             // Create the credentials object
             _credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                googleDriveClientSecrets.ClientSecrets,
+                new ClientSecrets(),
                 _scopes,
                 "user",
                 CancellationToken.None,
@@ -328,7 +328,7 @@ namespace GoogleKeep
         public async Task<string> Get(Blob blob)
         {
             var url = _base_url + blob.Parent.ServerId + "/" + blob.ServerId;
-            if (blob.NodeBlob.Type == GoogleKeep.BlobType.Drawing)
+            if (blob.NodeBlob.Type == GKeepApi.Net.BlobType.Drawing)
             {
                 url += "/" + (blob.NodeBlob as NodeDrawing).DrawingInfo.DrawingId;
             }
@@ -793,7 +793,7 @@ namespace GoogleKeep
             foreach (var item in items)
             {
                 node.Add(item.Item1, item.Item2, sort);
-                sort -= GoogleKeep.List.SORT_DELTA;
+                sort -= GKeepApi.Net.List.SORT_DELTA;
             }
             Add(node);
             return node;

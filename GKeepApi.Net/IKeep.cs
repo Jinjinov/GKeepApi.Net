@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace GoogleKeep
+namespace GKeepApi.Net
 {
     public interface IKeep
     {

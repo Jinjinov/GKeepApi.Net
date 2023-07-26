@@ -4,7 +4,7 @@ using System.Collections.Generic;
 /// <summary>
 /// exception.py
 /// </summary>
-namespace GoogleKeep
+namespace GKeepApi.Net
 {
     /// <summary>
     /// The API server returned an error.

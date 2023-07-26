@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GoogleKeep\GoogleKeep.csproj" />
+    <ProjectReference Include="..\GKeepApi.Net\GKeepApi.Net.csproj" />
   </ItemGroup>
 
 </Project>
