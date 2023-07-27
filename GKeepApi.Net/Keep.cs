@@ -14,28 +14,28 @@ using System.Threading.Tasks;
 /// </summary>
 namespace GKeepApi.Net
 {
-    public class APIAuth
+    internal class APIAuth
     {
         public string Email { get; set; }
         public string MasterToken { get; set; }
         public string AuthToken { get; set; }
         public string DeviceId { get; set; }
-        private readonly string[] _scopes;
+        private readonly string _scopes;
 
-        OAuth _gPSOAuth = new OAuth();
+        readonly IGPSOAuthClient _gPSOAuth = new GPSOAuthClient();
 
-        public APIAuth(string[] scopes)
+        public APIAuth(string scopes)
         {
             _scopes = scopes;
         }
 
-        public bool Login(string email, string password, string deviceId)
+        public async Task<bool> Login(string email, string password, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
 
             // Obtain a master token.
-            Dictionary<string, string> res = _gPSOAuth.PerformMasterLogin(Email, password, DeviceId);
+            Dictionary<string, string> res = await _gPSOAuth.PerformMasterLogin(Email, password, DeviceId);
 
             // Bail if browser login is required.
             if (res.ContainsKey("Error") && res["Error"] == "NeedsBrowser")
@@ -52,32 +52,33 @@ namespace GKeepApi.Net
             MasterToken = res["Token"];
 
             // Obtain an OAuth token.
-            Refresh();
+            await Refresh();
+
             return true;
         }
 
-        public bool Load(string email, string masterToken, string deviceId)
+        public async Task<bool> Load(string email, string masterToken, string deviceId)
         {
             Email = email;
             DeviceId = deviceId;
             MasterToken = masterToken;
 
             // Obtain an OAuth token.
-            Refresh();
+            await Refresh();
+
             return true;
         }
 
-        public string Refresh()
+        public async Task<string> Refresh()
         {
             // Obtain an OAuth token with the necessary scopes by pretending to be
             // the keep android client.
-            Dictionary<string, string> res = _gPSOAuth.PerformOAuth(
+            Dictionary<string, string> res = await _gPSOAuth.PerformOAuth(
                 Email,
                 MasterToken,
                 DeviceId,
                 service: _scopes,
-                app: "com.google.android.keep",
-                clientSig: "38918a453d07199354f8b19af05ec6562ced5788"
+                app: "com.google.android.keep"
             );
 
             // Bail if no token was returned.
@@ -102,20 +103,20 @@ namespace GKeepApi.Net
         }
     }
 
-    public class API
+    internal class API
     {
         private const int RETRY_CNT = 2;
         private readonly HttpClient _httpClient = new HttpClient();
         protected readonly string _baseUrl;
         private APIAuth _auth;
 
-        readonly string _version = "0.14.2";
+        readonly string UserAgent = "GoogleAuth/1.4";
 
         public API(string baseUrl, APIAuth auth = null)
         {
             _baseUrl = baseUrl;
             _auth = auth;
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "x-gkeepapi/" + _version);
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
         }
 
         public APIAuth GetAuth()
@@ -155,7 +156,7 @@ namespace GKeepApi.Net
 
                 Console.WriteLine("Refreshing access token");
 
-                _auth.Refresh();
+                await _auth.Refresh();
 
                 i++;
             }
@@ -198,7 +199,7 @@ namespace GKeepApi.Net
         }
     }
 
-    public class KeepAPI : API
+    internal class KeepAPI : API
     {
         private const string API_URL = "https://www.googleapis.com/notes/v1/";
 
@@ -287,7 +288,7 @@ namespace GKeepApi.Net
         }
     }
 
-    public class MediaAPI : API
+    internal class MediaAPI : API
     {
         private const string API_URL = "https://keep.google.com/media/v2/";
 
@@ -314,7 +315,7 @@ namespace GKeepApi.Net
         }
     }
 
-    public class RemindersAPI : API
+    internal class RemindersAPI : API
     {
         private const string API_URL = "https://www.googleapis.com/reminders/v1internal/reminders/";
         private readonly Dictionary<string, object> _staticParams = new Dictionary<string, object>
@@ -550,7 +551,7 @@ namespace GKeepApi.Net
     public class Keep : IKeep
     {
         // OAuth scopes
-        private readonly string[] OAUTH_SCOPES = { "https://www.googleapis.com/auth/memento", "https://www.googleapis.com/auth/reminders" };
+        private readonly string OAUTH_SCOPES = "https://www.googleapis.com/auth/memento https://www.googleapis.com/auth/reminders";
 
         private readonly KeepAPI _keepApi;
         private readonly RemindersAPI _remindersApi;
@@ -606,7 +607,7 @@ namespace GKeepApi.Net
                 deviceId = GetMac();
             }
 
-            bool ret = auth.Login(email, password, deviceId);
+            bool ret = await auth.Login(email, password, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
@@ -623,7 +624,7 @@ namespace GKeepApi.Net
                 deviceId = GetMac();
             }
 
-            bool ret = auth.Load(email, masterToken, deviceId);
+            bool ret = await auth.Load(email, masterToken, deviceId);
             if (ret)
             {
                 await Load(auth, state, sync);
