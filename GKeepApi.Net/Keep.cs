@@ -599,7 +599,7 @@ namespace GKeepApi.Net
             return firstMacAddress;
         }
 
-        public async Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
+        public async Task<bool> Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
             APIAuth auth = new APIAuth(OAUTH_SCOPES);
             if (deviceId == null)
@@ -616,7 +616,7 @@ namespace GKeepApi.Net
             return ret;
         }
 
-        public async Task<bool> Resume(string email = null, string masterToken = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
+        public async Task<bool> Resume(string email, string masterToken, Dictionary<string, object> state = null, bool sync = true, string deviceId = null)
         {
             APIAuth auth = new APIAuth(OAUTH_SCOPES);
             if (deviceId == null)

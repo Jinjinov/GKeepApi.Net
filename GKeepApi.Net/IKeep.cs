@@ -20,8 +20,8 @@ namespace GKeepApi.Net
         string GetMasterToken();
         Task<string> GetMediaLink(Blob blob);
         IEnumerable<Label> Labels();
-        Task<bool> Login(string email = null, string password = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null);
-        Task<bool> Resume(string email = null, string masterToken = null, Dictionary<string, object> state = null, bool sync = true, string deviceId = null);
+        Task<bool> Login(string email, string password, Dictionary<string, object> state = null, bool sync = true, string deviceId = null);
+        Task<bool> Resume(string email, string masterToken, Dictionary<string, object> state = null, bool sync = true, string deviceId = null);
         Task Sync(bool resync = false);
     }
 }
