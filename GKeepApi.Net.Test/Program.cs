@@ -6,9 +6,15 @@ namespace GKeepApi.Net.Test
     {
         static void Main(string[] _)
         {
+            Console.WriteLine("Google account email: ");
+            string email = Console.ReadLine();
+
+            Console.WriteLine("Password: ");
+            string password = Console.ReadLine();
+
             IKeep keep = new Keep();
 
-            keep.Login();
+            keep.Login(email, password);
 
             var notes = keep.All();
 

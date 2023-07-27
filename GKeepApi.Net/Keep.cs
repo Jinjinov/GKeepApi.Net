@@ -551,7 +551,7 @@ namespace GKeepApi.Net
     public class Keep : IKeep
     {
         // OAuth scopes
-        private readonly string OAUTH_SCOPES = "https://www.googleapis.com/auth/memento https://www.googleapis.com/auth/reminders";
+        private readonly string OAUTH_SCOPES = "oauth2:https://www.googleapis.com/auth/memento https://www.googleapis.com/auth/reminders";
 
         private readonly KeepAPI _keepApi;
         private readonly RemindersAPI _remindersApi;

@@ -33,8 +33,18 @@
 
   <ItemGroup>
     <PackageReference Include="Ardalis.SmartEnum" Version="2.1.0" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.61.0" />
-    <PackageReference Include="System.Net.Http.Json" Version="7.0.1" />
+    
+    <!--<PackageReference Include="GPSOAuthSharp" Version="0.0.5" /> DankMemes.GPSOAuthSharp {'Error': 'BadAuthentication'}-->
+    <!--<PackageReference Include="GPSOAuthSharp.NetCore" Version="0.1.0" /> GPSOAuthSharp.NetCore {'Error': 'BadAuthentication'}-->
+    <!--<PackageReference Include="GPSOAuthSharp.NetStandard1" Version="1.0.1" /> GPSOAuthSharp {'Error': 'BadAuthentication'}-->
+    <!--<PackageReference Include="GPSOAuthSharp.Portable" Version="0.0.8" /> Flurl.Http.FlurlHttpException: 'Request to https://android.clients.google.com/auth failed with status code 403 (Forbidden).'-->
+    <!--<PackageReference Include="GPSOAuthSharpNetCore" Version="1.0.1.9" /> DankMemes.GPSOAuthSharp {'Error': 'BadAuthentication'}-->
+    
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\GPSOAuth.Net\GPSOAuth.Net\GPSOAuth.Net.csproj" />
   </ItemGroup>
 
 </Project>

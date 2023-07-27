@@ -5,7 +5,9 @@ VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GKeepApi.Net", "GKeepApi.Net\GKeepApi.Net.csproj", "{C493F74C-64A7-4725-B973-68A5519B1825}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GKeepApi.Net.Test", "GKeepApi.Net.Test\GKeepApi.Net.Test.csproj", "{315EEF07-438C-4E93-8CB7-B19011978893}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GKeepApi.Net.Test", "GKeepApi.Net.Test\GKeepApi.Net.Test.csproj", "{315EEF07-438C-4E93-8CB7-B19011978893}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GPSOAuth.Net", "..\GPSOAuth.Net\GPSOAuth.Net\GPSOAuth.Net.csproj", "{E14E9202-9563-41C2-936A-FCB0DC7F8664}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{315EEF07-438C-4E93-8CB7-B19011978893}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{315EEF07-438C-4E93-8CB7-B19011978893}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{315EEF07-438C-4E93-8CB7-B19011978893}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E14E9202-9563-41C2-936A-FCB0DC7F8664}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E14E9202-9563-41C2-936A-FCB0DC7F8664}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E14E9202-9563-41C2-936A-FCB0DC7F8664}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E14E9202-9563-41C2-936A-FCB0DC7F8664}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
